@@ -1,7 +1,7 @@
 # Use of bool in modifier nonReentrant is gas expensive
 
 ## Summary
-Use of bool variable in nonReentrant modifier adds 22,100+ gas in each function that uses this modifier
+Use of bool variable in nonReentrant modifier adds 22,100+ gas to each function that uses the modifier
 
 ## Details
 The following modifier is defined in [ZetaTokenConsumerUniV3.strategy.sol](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L65), [ZetaTokenConsumerPancakeV3.strategy.sol
