@@ -854,3 +854,35 @@ function withdraw(bytes memory to, uint256 amount) external override returns (bo
 
     }
 ```
+## [L-02] ## Impact
+OpenZeppelin's safeApprove() function is deprecated and should not be used since it is affected by similar issues as approve() and can be exploited in frontrunning or sandwich attacks.
+Losses to Users: The main linked impact is upon users who may be victim to front running. 
+Users might be affected by economic shortfall while users' transactions get front-run by hackers, making them to pay more gas fees or get incorrect prices.
+There is no way to safely decrease or increase the amount of the token as the owner can only be the contract.
+The recipient can exploit this by pretending to be the sender and sending token as the sender to themselves, the attacker or malicious recipient. 
+Also, if the sender updates the amount they are trying to send then the malicious recipient can withdraw both amounts from the sender's account.
+Hencefotrh a front-running attack on the ERC20 token.
+Hence the function can front-run by manipulating the approve function.
+## Proof of Concept
+**Manual POC**
+**Approve Function**
+The approve() function takes control of the current funds even if the customer already utilised it or didn't, hence no chance to elevate or reduce funds by a particular value holistically but only in the case that the token possessor is the smart contract, not the account address.
+Which potentially leads to misconduct by a token recipient when the malicious recipient attempt the transfer of particular tokens out of the victim's account who is sending it.
+At the same time, it is possible that the sender makes a decision to update the amount and calls an extra approve transaction, and then the recipient is able to see this transaction prior to it's being mined and has the ability to take the tokens from the two transactions, hence, illegally taking tokens from the pending and non pending transactions. 
+This is called front-running attack within the ERC20 Approve method.
+The method approve is possibly front-run by misusing the safeApprove method.
+**Vulnerable safeApprove function**
+```sol
+// Line 108
+        IERC20(inputToken).safeApprove(address(uniswapV3Router), inputTokenAmount);
+```
+## Tools Used
+VS Code.
+## Recommended Mitigation Steps
+It is recommended to use safeIncreaseAllowance() and safeDecreaseAllowance instead of safeApprove().
+Just utilise the approve method of the ERC/BEP standard to update the allowed value to 0 or from 0 (wait until the transaction is committed and approved).
+Token possessor must confirm the first transaction has been mined from N to 0, that is, that the sender did not transfer a part of N allowed tokens prior to the first transaction was committed. 
+These checks are doable utilising complicated blockchain explorers like `[Etherscan.io](https://etherscan.io/)`
+Alternative ways to avoid the vulnerability is to approve token transfers solely to smart contracts that are verified code which do not contain business logic for carrying front running attacks also to accounts owned by users you know well.
+
+## [L-03] 
