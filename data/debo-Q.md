@@ -694,5 +694,163 @@ function send(ZetaInterfaces.SendInput calldata input) external override whenNot
 
     }
 
-// 
+// repos/protocol-contracts/contracts/evm/ZetaConnector.eth.sol#L52-L70
+function onReceive(
+
+        bytes calldata zetaTxSenderAddress,
+
+        uint256 sourceChainId,
+
+        address destinationAddress,
+
+        uint256 zetaValue,
+
+        bytes calldata message,
+
+        bytes32 internalSendHash
+
+    ) external override onlyTssAddress {
+
+        bool success = IERC20(zetaToken).transfer(destinationAddress, zetaValue);
+
+        if (!success) revert ZetaTransferError();
+
+
+        if (message.length > 0) {
+
+            ZetaReceiver(destinationAddress).onZetaMessage(
+
+                ZetaInterfaces.ZetaMessage(zetaTxSenderAddress, sourceChainId, destinationAddress, zetaValue, message)
+
+            );
+
+        }
+
+
+        emit ZetaReceived(zetaTxSenderAddress, sourceChainId, destinationAddress, zetaValue, message, internalSendHash);
+
+    }
+
+// repos/protocol-contracts/contracts/evm/ZetaConnector.eth.sol#L77-L111
+function onRevert(
+
+        address zetaTxSenderAddress,
+
+        uint256 sourceChainId,
+
+        bytes calldata destinationAddress,
+
+        uint256 destinationChainId,
+
+        uint256 remainingZetaValue,
+
+        bytes calldata message,
+
+        bytes32 internalSendHash
+
+    ) external override whenNotPaused onlyTssAddress {
+
+        bool success = IERC20(zetaToken).transfer(zetaTxSenderAddress, remainingZetaValue);
+
+        if (!success) revert ZetaTransferError();
+
+
+        if (message.length > 0) {
+
+            ZetaReceiver(zetaTxSenderAddress).onZetaRevert(
+
+                ZetaInterfaces.ZetaRevert(
+
+                    zetaTxSenderAddress,
+
+                    sourceChainId,
+
+                    destinationAddress,
+
+                    destinationChainId,
+
+                    remainingZetaValue,
+
+                    message
+
+                )
+
+            );
+
+        }
+
+
+        emit ZetaReverted(
+
+            zetaTxSenderAddress,
+
+            sourceChainId,
+
+            destinationChainId,
+
+            destinationAddress,
+
+            remainingZetaValue,
+
+            message,
+
+            internalSendHash
+
+        );
+
+    }
+
+// repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol#L92-L108
+function send(ZetaInterfaces.SendInput calldata input) external {
+
+        // Transfer wzeta to "fungible" module, which will be burnt by the protocol post processing via hooks.
+
+        if (!WZETA(wzeta).transferFrom(msg.sender, address(this), input.zetaValueAndGas)) revert WZETATransferFailed();
+
+        WZETA(wzeta).withdraw(input.zetaValueAndGas);
+
+        (bool sent, ) = FUNGIBLE_MODULE_ADDRESS.call{value: input.zetaValueAndGas}("");
+
+        if (!sent) revert FailedZetaSent();
+
+        emit ZetaSent(
+
+            tx.origin,
+
+            msg.sender,
+
+            input.destinationChainId,
+
+            input.destinationAddress,
+
+            input.zetaValueAndGas,
+
+            input.destinationGasLimit,
+
+            input.message,
+
+            input.zetaParams
+
+        );
+
+    }
+
+// repos/protocol-contracts/contracts/zevm/ZRC20.sol#L256-L264
+function withdraw(bytes memory to, uint256 amount) external override returns (bool) {
+
+        (address gasZRC20, uint256 gasFee) = withdrawGasFee();
+
+        if (!IZRC20(gasZRC20).transferFrom(msg.sender, FUNGIBLE_MODULE_ADDRESS, gasFee)) {
+
+            revert GasFeeTransferFailed();
+
+        }
+
+        _burn(msg.sender, amount);
+
+        emit Withdrawal(msg.sender, to, amount, gasFee, PROTOCOL_FLAT_FEE);
+
+        return true;
+
+    }
 ```
