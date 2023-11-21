@@ -251,5 +251,448 @@ function getEthFromZeta(
 
     }
 
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L126-L149
+function getZetaFromToken(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        address inputToken,
+
+        uint256 inputTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0) || inputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (inputTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+
+        IERC20(inputToken).safeApprove(address(pancakeV3Router), inputTokenAmount);
+
+
+        ISwapRouterPancake.ExactInputParams memory params = ISwapRouterPancake.ExactInputParams({
+
+            path: abi.encodePacked(inputToken, tokenPoolFee, WETH9Address, zetaPoolFee, zetaToken),
+
+            recipient: destinationAddress,
+
+            amountIn: inputTokenAmount,
+
+            amountOutMinimum: minAmountOut
+
+        });
+
+
+        uint256 amountOut = pancakeV3Router.exactInput(params);
+
+
+        emit TokenExchangedForZeta(inputToken, inputTokenAmount, amountOut);
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L151-L182
+function getEthFromZeta(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        uint256 zetaTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (zetaTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+        IERC20(zetaToken).safeApprove(address(pancakeV3Router), zetaTokenAmount);
+
+
+        ISwapRouterPancake.ExactInputSingleParams memory params = ISwapRouterPancake.ExactInputSingleParams({
+
+            tokenIn: zetaToken,
+
+            tokenOut: WETH9Address,
+
+            fee: zetaPoolFee,
+
+            recipient: address(this),
+
+            amountIn: zetaTokenAmount,
+
+            amountOutMinimum: minAmountOut,
+
+            sqrtPriceLimitX96: 0
+
+        });
+
+
+        uint256 amountOut = pancakeV3Router.exactInputSingle(params);
+
+
+        WETH9(WETH9Address).withdraw(amountOut);
+
+
+        emit ZetaExchangedForEth(zetaTokenAmount, amountOut);
+
+
+        (bool sent, ) = destinationAddress.call{value: amountOut}("");
+
+        if (!sent) revert ErrorSendingETH();
+
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L99-L134
+function getZetaFromToken(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        address inputToken,
+
+        uint256 inputTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0) || inputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (inputTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+
+        IERC20(inputToken).safeApprove(address(tridentRouter), inputTokenAmount);
+
+
+        (address token0, address token1) = getPair(inputToken, WETH9Address);
+
+        address[] memory pairPools1 = poolFactory.getPools(token0, token1, 0, 1);
+
+
+        (token0, token1) = getPair(WETH9Address, zetaToken);
+
+        address[] memory pairPools2 = poolFactory.getPools(token0, token1, 0, 1);
+
+
+        address[] memory path = new address[](2);
+
+        path[0] = pairPools1[0];
+
+        path[1] = pairPools2[0];
+
+
+        IPoolRouter.ExactInputParams memory params = IPoolRouter.ExactInputParams({
+
+            tokenIn: inputToken,
+
+            amountIn: inputTokenAmount,
+
+            amountOutMinimum: minAmountOut,
+
+            path: path,
+
+            to: destinationAddress,
+
+            unwrap: false
+
+        });
+
+
+        uint256 amountOut = tridentRouter.exactInput(params);
+
+
+        emit TokenExchangedForZeta(inputToken, inputTokenAmount, amountOut);
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L136-L164
+function getEthFromZeta(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        uint256 zetaTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (zetaTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+        IERC20(zetaToken).safeApprove(address(tridentRouter), zetaTokenAmount);
+
+
+        (address token0, address token1) = getPair(zetaToken, WETH9Address);
+
+        address[] memory pairPools = poolFactory.getPools(token0, token1, 0, 1);
+
+
+        IPoolRouter.ExactInputSingleParams memory params = IPoolRouter.ExactInputSingleParams({
+
+            tokenIn: zetaToken,
+
+            amountIn: zetaTokenAmount,
+
+            amountOutMinimum: minAmountOut,
+
+            pool: pairPools[0],
+
+            to: destinationAddress,
+
+            unwrap: true
+
+        });
+
+
+        uint256 amountOut = tridentRouter.exactInputSingle(params);
+
+
+        emit ZetaExchangedForEth(zetaTokenAmount, amountOut);
+
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L58-L93
+function getZetaFromToken(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        address inputToken,
+
+        uint256 inputTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0) || inputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (inputTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+
+        IERC20(inputToken).safeApprove(address(uniswapV2Router), inputTokenAmount);
+
+
+        address[] memory path;
+
+        if (inputToken == wETH) {
+
+            path = new address[](2);
+
+            path[0] = wETH;
+
+            path[1] = zetaToken;
+
+        } else {
+
+            path = new address[](3);
+
+            path[0] = inputToken;
+
+            path[1] = wETH;
+
+            path[2] = zetaToken;
+
+        }
+
+
+        uint256[] memory amounts = uniswapV2Router.swapExactTokensForTokens(
+
+            inputTokenAmount,
+
+            minAmountOut,
+
+            path,
+
+            destinationAddress,
+
+            block.timestamp + MAX_DEADLINE
+
+        );
+
+        uint256 amountOut = amounts[path.length - 1];
+
+
+        emit TokenExchangedForZeta(inputToken, inputTokenAmount, amountOut);
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L95-L122
+function getEthFromZeta(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        uint256 zetaTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (zetaTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+        IERC20(zetaToken).safeApprove(address(uniswapV2Router), zetaTokenAmount);
+
+
+        address[] memory path = new address[](2);
+
+        path[0] = zetaToken;
+
+        path[1] = wETH;
+
+
+        uint256[] memory amounts = uniswapV2Router.swapExactTokensForETH(
+
+            zetaTokenAmount,
+
+            minAmountOut,
+
+            path,
+
+            destinationAddress,
+
+            block.timestamp + MAX_DEADLINE
+
+        );
+
+
+        uint256 amountOut = amounts[path.length - 1];
+
+
+        emit ZetaExchangedForEth(zetaTokenAmount, amountOut);
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L124-L160
+function getTokenFromZeta(
+
+        address destinationAddress,
+
+        uint256 minAmountOut,
+
+        address outputToken,
+
+        uint256 zetaTokenAmount
+
+    ) external override returns (uint256) {
+
+        if (destinationAddress == address(0) || outputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
+
+        if (zetaTokenAmount == 0) revert InputCantBeZero();
+
+
+        IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+        IERC20(zetaToken).safeApprove(address(uniswapV2Router), zetaTokenAmount);
+
+
+        address[] memory path;
+
+        if (outputToken == wETH) {
+
+            path = new address[](2);
+
+            path[0] = zetaToken;
+
+            path[1] = wETH;
+
+        } else {
+
+            path = new address[](3);
+
+            path[0] = zetaToken;
+
+            path[1] = wETH;
+
+            path[2] = outputToken;
+
+        }
+
+
+        uint256[] memory amounts = uniswapV2Router.swapExactTokensForTokens(
+
+            zetaTokenAmount,
+
+            minAmountOut,
+
+            path,
+
+            destinationAddress,
+
+            block.timestamp + MAX_DEADLINE
+
+        );
+
+
+        uint256 amountOut = amounts[path.length - 1];
+
+
+        emit ZetaExchangedForToken(outputToken, zetaTokenAmount, amountOut);
+
+        return amountOut;
+
+    }
+
+// repos/protocol-contracts/contracts/evm/ZetaConnector.eth.sol#L31-L45
+function send(ZetaInterfaces.SendInput calldata input) external override whenNotPaused {
+
+        bool success = IERC20(zetaToken).transferFrom(msg.sender, address(this), input.zetaValueAndGas);
+
+        if (!success) revert ZetaTransferError();
+
+
+        emit ZetaSent(
+
+            tx.origin,
+
+            msg.sender,
+
+            input.destinationChainId,
+
+            input.destinationAddress,
+
+            input.zetaValueAndGas,
+
+            input.destinationGasLimit,
+
+            input.message,
+
+            input.zetaParams
+
+        );
+
+    }
+
 // 
 ```
