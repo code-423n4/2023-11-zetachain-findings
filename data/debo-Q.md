@@ -925,3 +925,21 @@ tx.origin ought not to be utilised for approving access in smart contracts.
 It needs have little legal use cases, for instance, for avoiding external contracts from calling the victim contract, one can install a require of the syntax require(tx.origin == msg.sender). 
 It avoids intersection contracts from calling the victim contract, and in turn restricting the contract to regular code free addresses.
 
+[L-05] SIMILAR CONTRACTS LIBRARY
+## Impact
+When you compile a Solidity codebase, the compiler generates compilation artifacts, which include information about the contracts and their bytecode. 
+If there are two contracts with the same name, the compiler will encounter a naming conflict and will not be able to generate compilation artifacts for both contracts.
+## Proof of Concept
+**Vulnerable Contract Libraries**
+```sol
+// repos/protocol-contracts/contracts/evm/interfaces/ZetaInterfaces.sol#L4-L47
+interface ZetaInterfaces {
+
+// repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol#L4-L47
+interface ZetaInterfaces {
+```
+## Tools Used
+VS Code.
+## Recommended Mitigation Steps
+To resolve this issue, you need to ensure that all contracts within your codebase have unique names. 
+Renaming one of the contracts to have a distinct name will allow the compiler to generate compilation artifacts for both contracts successfully.
