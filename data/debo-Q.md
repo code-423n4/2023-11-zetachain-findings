@@ -854,7 +854,8 @@ function withdraw(bytes memory to, uint256 amount) external override returns (bo
 
     }
 ```
-## [L-02] ## Impact
+## [L-02] DEPRECATED SAFE APPROVE
+## Impact
 OpenZeppelin's safeApprove() function is deprecated and should not be used since it is affected by similar issues as approve() and can be exploited in frontrunning or sandwich attacks.
 Losses to Users: The main linked impact is upon users who may be victim to front running. 
 Users might be affected by economic shortfall while users' transactions get front-run by hackers, making them to pay more gas fees or get incorrect prices.
@@ -885,4 +886,25 @@ Token possessor must confirm the first transaction has been mined from N to 0, t
 These checks are doable utilising complicated blockchain explorers like `[Etherscan.io](https://etherscan.io/)`
 Alternative ways to avoid the vulnerability is to approve token transfers solely to smart contracts that are verified code which do not contain business logic for carrying front running attacks also to accounts owned by users you know well.
 
-## [L-03] 
+## [L-03] INCORRECT FALLBACK FUNCTION
+## Impact
+The fallback function plays an important role in maintaining the logic flow of the contract.
+This function is executed on a call to the contract if none of the other functions match the given function signature, or if no data was supplied at all and there is no receive Ether function.
+The fallback function present in the contract WETH9 was found to be misconfigured.
+## Proof of Concept
+**Vulnerable fallback function**
+```sol
+    function() public payable {
+        deposit();
+    }
+```
+## Tools Used
+VS Code.
+## Recommended Mitigation Steps
+Make sure that the fallback function used is following the format specified by solidity.
+- A contract can have at most one fallback function.
+- It should be declared using either fallback() external [payable] or fallback (bytes calldata input) external [payable] returns (bytes memory output). (both without the function keyword).
+- This function must have external visibility.
+- A fallback function can be virtual, can override, and can have modifiers.
+
+
