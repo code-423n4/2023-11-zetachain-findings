@@ -907,4 +907,21 @@ Make sure that the fallback function used is following the format specified by s
 - This function must have external visibility.
 - A fallback function can be virtual, can override, and can have modifiers.
 
+## [L-04] USE OF TX ORIGIN
+## Impact
+Within Solidity the tx.origin identifies as a global variable which outputs the address o accounts whom send the transfers. 
+Utilising the variable for access control would render the contract vulnerable. 
+For instance, if an approved account calls an attacker contract which activates it to call the susceptible contract that goes through an access control validation because tx.origin outputs the first sender of the transfer that in this instance is the authenticated and approved account.
+## Proof of Concept
+**Vulnerable Code**
+```sol
+// Line 44
+            tx.origin,
+```
+## Tools Used
+VS Code.
+## Recommended Mitigation Steps
+tx.origin ought not to be utilised for approving access in smart contracts. 
+It needs have little legal use cases, for instance, for avoiding external contracts from calling the victim contract, one can install a require of the syntax require(tx.origin == msg.sender). 
+It avoids intersection contracts from calling the victim contract, and in turn restricting the contract to regular code free addresses.
 
