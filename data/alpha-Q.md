@@ -28,4 +28,4 @@ File: repos/protocol-contracts/evm/tools/ImmutableCreate2Factory.sol
 ```
 For the above code require: 
 ```require(!_deployed[deploymentAddress], "Contract deployed"); ```
-is also unnecessary, as it will revert when deploying to the same address. I suggest removing it.
+is also unnecessary, as it will revert when deploying to the same address. I suggest removing it too.
