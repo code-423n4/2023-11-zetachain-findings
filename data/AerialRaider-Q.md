@@ -1,3 +1,4 @@
+## 1
 ## Risk rating 
 QA
 
@@ -93,3 +94,76 @@ Return Boolean Value: Based on the retrieved liquidity information and your defi
 
 Conclusion:
 The modifications to the hasZetaLiquidity function are designed to provide a reliable and dynamic way to assess liquidity in Zeta token swap pools. These changes enhance the contract’s capability to make informed decisions about the feasibility of token swaps, based on the real-time liquidity situation in the pools.
+
+
+## 2
+# Risk rating 
+QA
+
+
+## Title 
+Enhance the ZetaTokenConsumerUniV2 contract with more comprehensive error handling
+
+Links to affected code *
+Provide GitHub links, including line numbers, to all instances of this bug throughout the repo. (How do I link to line numbers on GitHub?)
+
+## Impact
+To enhance the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we should identify potential failure scenarios in each function and implement custom errors or checks to handle these cases effectively. This approach not only improves the robustness of the contract but also makes it easier to understand and debug. Here are some steps and examples:
+
+## Proof of Concept
+1. Identify Failure Scenarios:
+For each function, consider what might go wrong. This includes not only input validation (already handled by checks like revert InputCantBeZero() but also failures in external calls, state changes, or logical errors.
+
+2. Implement Custom Errors:
+Define custom errors at the beginning of the contract for different failure scenarios.
+Example:
+error InsufficientOutputAmount();
+error TransferFailed();
+error ApprovalFailed();
+
+3. Apply Error Handling in Functions:
+getZetaFromEth:
+Check the output amount received from the Uniswap swap call.
+If the output amount is less than minAmountOut, revert with InsufficientOutputAmount.
+getZetaFromToken:
+After transferring tokens to the contract, verify the transfer was successful.
+Similarly, check if the safeApprove call to the Uniswap router is successful.
+Handle the case where the output amount is less than minAmountOut.
+getEthFromZeta and getTokenFromZeta:
+Implement similar checks for successful transfers, approvals, and output amounts as in getZetaFromToken.
+hasZetaLiquidity:
+Consider adding more detailed checks or differentiating between various reasons why liquidity might be considered insufficient.
+
+4. Example Code Snippet for getZetaFromToken:
+
+function getZetaFromToken(
+    address destinationAddress,
+    uint256 minAmountOut,
+    address inputToken,
+    uint256 inputTokenAmount
+) external override returns (uint256) {
+    if (destinationAddress == address(0) || inputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
+    if (inputTokenAmount == 0) revert InputCantBeZero();
+
+    IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+    if (!IERC20(inputToken).approve(address(uniswapV2Router), inputTokenAmount)) {
+        revert ApprovalFailed();
+    }
+
+    // ... [rest of the existing code] ...
+
+    uint256 amountOut = amounts[path.length - 1];
+    if (amountOut < minAmountOut) {
+        revert InsufficientOutputAmount();
+    }
+
+    emit TokenExchangedForZeta(inputToken, inputTokenAmount, amountOut);
+    return amountOut;
+}
+
+## Tools Used
+VS Code
+
+## Recommended Mitigation Steps
+Conclusion:
+By enhancing the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we can better anticipate and manage failure scenarios, leading to a more robust and user-friendly contract. This approach helps in pinpointing issues quickly, facilitating easier debugging and enhancing overall contract reliability.
