@@ -1,4 +1,4 @@
-[Gas-1] Optimizing findCreate2Address with Assembly for Efficient Contract Address Computation"
+[Gas-1] Optimizing findCreate2Address with Assembly for Efficient Contract Address Computation
 The following is the optimized findCreate2Address function with all enhancements:
 ```solidity
 File: repos/protocol-contracts/evm/tools/ImmutableCreate2Factory.sol
@@ -24,4 +24,16 @@ function findCreate2Address(
         }
     }
 
+```
+
+[Gas-2] Merge findCreate2Address and findCreate2AddressViaHash logic
+Using findCreate2Address call findCreate2AddressViaHash like this:
+```
+
+    function findCreate2Address(
+        bytes32 salt,
+        bytes calldata initCode
+    ) external view returns (address deploymentAddress) {
+     return findCreate2AddressViaHash(salt,keccak256(abi.encodePacked(initCode)));
+}
 ```
