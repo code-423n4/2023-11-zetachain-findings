@@ -1,15 +1,11 @@
-## [L-01] SWC-115 Use of `"tx.origin"` as a part of `authorization` control.
-## IMPACT
-Using `"tx.origin"` as a security control can lead to `authorization` bypass vulnerabilities. 
-A call could be made to the vulnerable contract that passes the authorization check since tx.origin returns the original sender of the transaction which in this case is the authorized account.
-Consider using `"msg.sender"` unless you really know what you are doing.
-## POC
-**Vulnerable Code**
-```sol
-// Line 99
-            tx.origin,
-```
-## References
-```https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol#L99```
+## [L-01] SWC-123 Requirement violation
+## Impact
+A requirement was violated in a nested call and the call was reverted as a result. Make sure valid inputs are provided to the nested call (for instance, via passed arguments).
 ## Remediation
-`tx.origin` should not be used for `authorization`. Use `msg.sender` instead.
+If the required logical condition is too strong, it should be weakened to allow all valid external inputs.
+Otherwise, the bug must be in the contract that provided the external input and one should consider fixing its code by making sure no invalid inputs are provided.
+## Location
+```sol
+// https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L11
+contract ERC20Custody is ReentrancyGuard {
+```
