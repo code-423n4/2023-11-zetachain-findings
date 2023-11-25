@@ -11,3 +11,6 @@ Apparently ** ALL THE CONTRACT IN SCOPE ** has no zero address check which means
 
 ## Ancient Pragma Version
 The contract `repos/protocol-contracts/contracts/zevm/WZETA.sol` uses Ancient Complier Version `pragma solidity ^0.4.18;` which has integer overflow and underflow. Do use the latest version and use it consistently throughout the contracts.
+
+## Missing Receive() function
+The contract `repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol` receives ether to swap for tokens, it is great practice to have a receive or fallback function for contracts that receives ether.
