@@ -3,7 +3,8 @@
 QA
 
 ## Title 
-updated hasZetaLiquidity function provides a way to assess the liquidity situation for Zeta token swaps in a specific pool and implements a robust check for sufficient liquidity in the Zeta token swap pools.
+In the ZetaTokenConsumerTrident contract the hasZetaLiquidity function, needs to implement a more robust check to determine if there's sufficient liquidity in the pool for Zeta token swaps.
+
 ## Links to affected code 
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L203
@@ -11,11 +12,8 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 ## Impact
 In the ZetaTokenConsumerTrident contract the hasZetaLiquidity function, I believe we need to implement a more robust check to determine if there's sufficient liquidity in the pool for Zeta token swaps.  This function should interact with the liquidity pool to get the current state of liquidity and return a boolean value indicating whether the liquidity is adequate.
 
-This updated hasZetaLiquidity function provides a way to assess the liquidity situation for Zeta token swaps in a specific pool and implements a robust check for sufficient liquidity in the Zeta token swap pools.
-
 ## Proof of Concept
 Here's an example implementation, assuming you're working with a standard pool contract that has a getReserves function. 
-
 
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
@@ -259,9 +257,9 @@ event OperationExecuted(bytes32 indexed operationId): Emitted when an operation 
 
 ## 4.
 ## Title 
-Implementing a timelock mechanism for sensitive changes in an interface like ISystem 
+To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability
 
-www.
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/Zeta.eth.sol
 
 ## Impact
 To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features.  Here's a summary of the changes and the reasons behind them:
