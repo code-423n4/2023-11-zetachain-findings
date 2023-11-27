@@ -168,7 +168,7 @@ VS Code
 Conclusion:
 By enhancing the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we can better anticipate and manage failure scenarios, leading to a more robust and user-friendly contract. This approach helps in pinpointing issues quickly, facilitating easier debugging and enhancing overall contract reliability.
 
-Risk 3.  
+## 3.  
 Risk rating 
 Q/A low
 
@@ -257,3 +257,83 @@ Events:
 event OperationScheduled(bytes32 indexed operationId, uint256 timestamp): Emitted when an operation is scheduled.
 event OperationExecuted(bytes32 indexed operationId): Emitted when an operation is executed.
 
+## 4.
+## Title 
+Implementing a timelock mechanism for sensitive changes in an interface like ISystem 
+
+www.
+
+## Impact
+To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features.  Here's a summary of the changes and the reasons behind them:
+
+## Proof of Concept
+Changes Made
+Added Burnable Feature: By extending the ERC20Burnable from OpenZeppelin, the contract now allows token holders to destroy (burn) their own tokens. This feature can be useful for reducing the total supply or for specific tokenomics models.
+
+Added Pausable Feature: The contract now includes the ERC20Pausable extension. This feature allows the contract owner to pause all token transfers in case of an emergency or during a critical update. It adds an extra layer of control and security.
+
+Implemented Access Control: By integrating the Ownable contract, the contract now has a clear ownership structure. This means that sensitive functions, like pausing the contract, can only be executed by the owner, adding a layer of administrative control.
+
+Override _beforeTokenTransfer Function: To ensure that the pause functionality properly works with token transfers, I overrode the _beforeTokenTransfer function. This function is called in every transfer, mint, and burn operation, and it includes the necessary checks for the paused state.
+
+Reasons for Changes
+Burnability: Token burning is a common requirement in many tokenomics models, as it can be used to control inflation or provide value to the token holders.
+
+Pausability: This feature is critical for emergency response. In case of a detected vulnerability or attack, the ability to pause transfers can prevent further damage.
+
+Access Control: Designating an owner who can execute sensitive functions reduces the risk of unauthorized access and changes. It provides a clear governance structure for the contract.
+
+Security and Functionality Integration: Overriding the _beforeTokenTransfer function ensures that all extensions (like pausability) properly integrate with the basic ERC20 functionality without conflicts or unexpected behaviors.
+
+To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features:
+
+Modified Contract
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.7;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @dev ZetaEth is an extended implementation of OpenZeppelin's ERC20
+ * with Burnable, Pausable, and Ownable functionality.
+ */
+contract ZetaEth is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
+    constructor(address creator, uint256 initialSupply) ERC20("Zeta", "ZETA") {
+        transferOwnership(creator);
+        _mint(creator, initialSupply * (10 ** uint256(decimals())));
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override(ERC20, ERC20Pausable)
+    {
+        super._beforeTokenTransfer(from, to, amount);
+    }
+}
+## Tools Used
+VS code
+
+## Recommended Mitigation Steps
+Key Additions
+Burnability: Using ERC20Burnable from OpenZeppelin, this contract allows token holders to destroy (burn) their tokens.
+Pausability: The ERC20Pausable extension allows pausing the token transfers, which can be useful in case of emergencies or upgrades.
+Access Control: Ownable provides simple access control by designating an owner who can execute restricted functions, such as pausing the token.
+Usage
+Pause and Unpause: The owner can pause or unpause token transfers. When paused, all token transfers are stopped.
+Burn Tokens: Any token holder can burn their tokens, reducing the total supply.
+Ownership Transfer: Ownership of the contract can be transferred to a new address, and the new owner can perform restricted operations.
+Deployment Considerations
+The creator address passed in the constructor is set as the owner of the contract.
+The initialSupply is minted to the creator's address.
+Ensure that the creator's address is correctly set to avoid losing control over the contract.
