@@ -167,3 +167,91 @@ VS Code
 ## Recommended Mitigation Steps
 Conclusion:
 By enhancing the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we can better anticipate and manage failure scenarios, leading to a more robust and user-friendly contract. This approach helps in pinpointing issues quickly, facilitating easier debugging and enhancing overall contract reliability.
+
+Risk 3.  
+Risk rating 
+Q/A low
+
+## Title 
+Implementing a timelock mechanism for sensitive changes in an interface like ISystem 
+
+
+## Impact
+Implementing a timelock mechanism for sensitive changes in an interface like ISystem involves introducing a delay between the initiation of a critical operation and its execution. This approach is particularly useful in decentralized systems where governance and security are paramount. Here's a basic outline for adding timelock functionality to the ISystem interface:
+
+## Proof of Concept
+Benefits and Considerations:
+Enhanced Security: The delay allows stakeholders to review and respond to proposed changes.
+
+Governance: Timelocks align with decentralized governance principles, offering transparency and predictability.
+
+Complexity: The implementation adds complexity to the contract. Careful testing and auditing are necessary.
+
+User Experience: For non-critical operations, consider bypassing the timelock to maintain usability.
+
+This approach effectively creates a window during which the proposed changes can be reviewed, challenged, or prepared for, making it a robust solution for managing critical updates in decentralized systems.
+Sample Implementation:
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+interface ISystem {
+    // ... existing interface functions ...
+
+    // Timelock related functions
+    function scheduleTimelockedOperation(bytes32 operationId, uint256 delay) external;
+    function executeTimelockedOperation(bytes32 operationId) external;
+}
+
+contract SystemContract is ISystem {
+    mapping(bytes32 => uint256) public timelockSchedule;
+    uint256 public constant MINIMUM_TIMELOCK_DELAY = 48 hours; // Example delay
+
+    modifier timelockedOperation(bytes32 operationId) {
+        require(block.timestamp >= timelockSchedule[operationId], "Operation is still timelocked");
+        _;
+    }
+
+    function scheduleTimelockedOperation(bytes32 operationId, uint256 delay) external override {
+        require(delay >= MINIMUM_TIMELOCK_DELAY, "Delay is too short");
+        uint256 scheduledTime = block.timestamp + delay;
+        timelockSchedule[operationId] = scheduledTime;
+        emit OperationScheduled(operationId, scheduledTime);
+    }
+
+    function executeTimelockedOperation(bytes32 operationId) external override timelockedOperation(operationId) {
+        // Execute the operation
+        delete timelockSchedule[operationId];
+        emit OperationExecuted(operationId);
+    }
+
+    // ... other functions ...
+
+    event OperationScheduled(bytes32 indexed operationId, uint256 timestamp);
+    event OperationExecuted(bytes32 indexed operationId);
+}
+
+## Tools Used
+VS code
+
+## Recommended Mitigation Steps
+Define State Variables:
+mapping(bytes32 => uint256) public timelockSchedule: Maps a unique operation identifier to a timestamp when the operation can be executed.
+
+Define Constants:
+uint256 public constant MINIMUM_TIMELOCK_DELAY: The minimum delay duration (in seconds) before an operation can be executed after being scheduled.
+
+Modifiers:
+timelockedOperation: Ensures that the current timestamp is greater than or equal to the scheduled time for the operation.
+
+Timelock Functions:
+function scheduleTimelockedOperation(bytes32 operationId, uint256 delay) internal: Schedules an operation with a given delay.
+function executeTimelockedOperation(bytes32 operationId) internal timelockedOperation: Executes the operation if the timelock period has elapsed.
+
+Utility Functions:
+function _getOperationId(...) internal pure returns (bytes32): Generates a unique operation identifier based on operation parameters.
+
+Events:
+event OperationScheduled(bytes32 indexed operationId, uint256 timestamp): Emitted when an operation is scheduled.
+event OperationExecuted(bytes32 indexed operationId): Emitted when an operation is executed.
+
