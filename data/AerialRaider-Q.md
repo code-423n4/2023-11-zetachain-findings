@@ -13,7 +13,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 In the ZetaTokenConsumerTrident contract the hasZetaLiquidity function, I believe we need to implement a more robust check to determine if there's sufficient liquidity in the pool for Zeta token swaps.  This function should interact with the liquidity pool to get the current state of liquidity and return a boolean value indicating whether the liquidity is adequate.
 
 ## Proof of Concept
-Here's an example implementation, assuming you're working with a standard pool contract that has a getReserves function. 
+Here's an example implementation..
 
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
@@ -48,6 +48,7 @@ contract ZetaTokenConsumerTrident is ZetaTokenConsumer, ZetaTokenConsumerTrident
 interface IUniswapV2Pair {
     function getReserves() external view returns (uint112 reserve1, uint112 reserve2, uint32 blockTimestampLast);
 }
+
 Changes Made:
 Interact with Pool Contracts:
 Added functionality to interact with liquidity pool contracts. This involves retrieving the current liquidity state from these pools.
@@ -62,6 +63,12 @@ Modified the function to return a boolean value (true or false) indicating wheth
 Sample Interface for Liquidity Pool Interaction:
 Provided an example interface (IUniswapV2Pair) to demonstrate how the contract might interact with a Uniswap-like liquidity pool. This interface includes a getReserves method, which is a common method in liquidity pool contracts.
 
+
+
+## Tools Used
+VS code
+
+## Recommended Mitigation Steps
 Rationale Behind Changes:
 Accurate Liquidity Assessment:
 Direct interaction with pool contracts allows for an accurate and real-time assessment of liquidity, which is crucial for ensuring that token swaps can be executed efficiently.
@@ -75,98 +82,10 @@ The boolean return value provides a clear and straightforward way for other part
 Flexibility and Compatibility:
 The example interface (IUniswapV2Pair) provides a template that can be adapted to various types of liquidity pool contracts, offering flexibility and wider compatibility.
 
-## Tools Used
-VS code
-
-## Recommended Mitigation Steps
-
-
-Implementation Steps:
-Determine Pool Addresses: Identify the addresses of the liquidity pools used for Zeta token swaps. 
-
-Interact with Pool Contracts: Using the pool addresses, interact with the respective pool contracts to check the current liquidity state. This might involve calling a function like getReserves or a similar method provided by the pool contract.
-
-Define Liquidity Thresholds: Establish what constitutes 'sufficient liquidity'. This could be a fixed value or a more dynamic measure based on the total pool size, trading volume, or other factors.
-
-Return Boolean Value: Based on the retrieved liquidity information and your defined thresholds, return true if the liquidity is considered sufficient for trading, or false otherwise.
-
 Conclusion:
 The modifications to the hasZetaLiquidity function are designed to provide a reliable and dynamic way to assess liquidity in Zeta token swap pools. These changes enhance the contract’s capability to make informed decisions about the feasibility of token swaps, based on the real-time liquidity situation in the pools.
 
-
-## 2
-# Risk rating 
-QA
-
-
-## Title 
-Enhance the ZetaTokenConsumerUniV2 contract with more comprehensive error handling
-
-Links to affected code *
-Provide GitHub links, including line numbers, to all instances of this bug throughout the repo. (How do I link to line numbers on GitHub?)
-
-## Impact
-To enhance the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we should identify potential failure scenarios in each function and implement custom errors or checks to handle these cases effectively. This approach not only improves the robustness of the contract but also makes it easier to understand and debug. Here are some steps and examples:
-
-## Proof of Concept
-1. Identify Failure Scenarios:
-For each function, consider what might go wrong. This includes not only input validation (already handled by checks like revert InputCantBeZero() but also failures in external calls, state changes, or logical errors.
-
-2. Implement Custom Errors:
-Define custom errors at the beginning of the contract for different failure scenarios.
-Example:
-error InsufficientOutputAmount();
-error TransferFailed();
-error ApprovalFailed();
-
-3. Apply Error Handling in Functions:
-getZetaFromEth:
-Check the output amount received from the Uniswap swap call.
-If the output amount is less than minAmountOut, revert with InsufficientOutputAmount.
-getZetaFromToken:
-After transferring tokens to the contract, verify the transfer was successful.
-Similarly, check if the safeApprove call to the Uniswap router is successful.
-Handle the case where the output amount is less than minAmountOut.
-getEthFromZeta and getTokenFromZeta:
-Implement similar checks for successful transfers, approvals, and output amounts as in getZetaFromToken.
-hasZetaLiquidity:
-Consider adding more detailed checks or differentiating between various reasons why liquidity might be considered insufficient.
-
-4. Example Code Snippet for getZetaFromToken:
-
-function getZetaFromToken(
-    address destinationAddress,
-    uint256 minAmountOut,
-    address inputToken,
-    uint256 inputTokenAmount
-) external override returns (uint256) {
-    if (destinationAddress == address(0) || inputToken == address(0)) revert ZetaCommonErrors.InvalidAddress();
-    if (inputTokenAmount == 0) revert InputCantBeZero();
-
-    IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
-    if (!IERC20(inputToken).approve(address(uniswapV2Router), inputTokenAmount)) {
-        revert ApprovalFailed();
-    }
-
-    // ... [rest of the existing code] ...
-
-    uint256 amountOut = amounts[path.length - 1];
-    if (amountOut < minAmountOut) {
-        revert InsufficientOutputAmount();
-    }
-
-    emit TokenExchangedForZeta(inputToken, inputTokenAmount, amountOut);
-    return amountOut;
-}
-
-## Tools Used
-VS Code
-
-## Recommended Mitigation Steps
-Conclusion:
-By enhancing the ZetaTokenConsumerUniV2 contract with more comprehensive error handling, we can better anticipate and manage failure scenarios, leading to a more robust and user-friendly contract. This approach helps in pinpointing issues quickly, facilitating easier debugging and enhancing overall contract reliability.
-
-## 3.  
+## 2.  
 Risk rating 
 Q/A low
 
@@ -180,15 +99,6 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 Implementing a timelock mechanism for sensitive changes in an interface like ISystem involves introducing a delay between the initiation of a critical operation and its execution. This approach is particularly useful in decentralized systems where governance and security are paramount. Here's a basic outline for adding timelock functionality to the ISystem interface:
 
 ## Proof of Concept
-Benefits and Considerations:
-Enhanced Security: The delay allows stakeholders to review and respond to proposed changes.
-
-Governance: Timelocks align with decentralized governance principles, offering transparency and predictability.
-
-Complexity: The implementation adds complexity to the contract. Careful testing and auditing are necessary.
-
-User Experience: For non-critical operations, consider bypassing the timelock to maintain usability.
-
 This approach effectively creates a window during which the proposed changes can be reviewed, challenged, or prepared for, making it a robust solution for managing critical updates in decentralized systems.
 Sample Implementation:
 
@@ -255,35 +165,17 @@ Events:
 event OperationScheduled(bytes32 indexed operationId, uint256 timestamp): Emitted when an operation is scheduled.
 event OperationExecuted(bytes32 indexed operationId): Emitted when an operation is executed.
 
-## 4.
+## 3.
 ## Title 
 To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/Zeta.eth.sol
 
 ## Impact
-To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features.  Here's a summary of the changes and the reasons behind them:
+If you wanted to enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features.  Here's a summary of the changes and the reasons behind them:
 
 ## Proof of Concept
-Changes Made
-Added Burnable Feature: By extending the ERC20Burnable from OpenZeppelin, the contract now allows token holders to destroy (burn) their own tokens. This feature can be useful for reducing the total supply or for specific tokenomics models.
 
-Added Pausable Feature: The contract now includes the ERC20Pausable extension. This feature allows the contract owner to pause all token transfers in case of an emergency or during a critical update. It adds an extra layer of control and security.
-
-Implemented Access Control: By integrating the Ownable contract, the contract now has a clear ownership structure. This means that sensitive functions, like pausing the contract, can only be executed by the owner, adding a layer of administrative control.
-
-Override _beforeTokenTransfer Function: To ensure that the pause functionality properly works with token transfers, I overrode the _beforeTokenTransfer function. This function is called in every transfer, mint, and burn operation, and it includes the necessary checks for the paused state.
-
-Reasons for Changes
-Burnability: Token burning is a common requirement in many tokenomics models, as it can be used to control inflation or provide value to the token holders.
-
-Pausability: This feature is critical for emergency response. In case of a detected vulnerability or attack, the ability to pause transfers can prevent further damage.
-
-Access Control: Designating an owner who can execute sensitive functions reduces the risk of unauthorized access and changes. It provides a clear governance structure for the contract.
-
-Security and Functionality Integration: Overriding the _beforeTokenTransfer function ensures that all extensions (like pausability) properly integrate with the basic ERC20 functionality without conflicts or unexpected behaviors.
-
-To enhance the ZetaEth contract with additional features such as access control, burnability, and pausability, you can extend it with more OpenZeppelin contracts. Here's an updated version of the ZetaEth contract incorporating these features:
 
 Modified Contract
 // SPDX-License-Identifier: MIT
