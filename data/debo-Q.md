@@ -301,4 +301,136 @@ try ZetaReceiver(destinationAddress).onZetaMessage{gas: gasLimit}(...) {
 ```
 
 Implementing these recommendations will help mitigate the risks associated with the `onReceive` function and improve the overall security and robustness of the `ZetaConnectorEth` contract.
-## [L-03] 
+
+## [L-03] Lack of validation on the input parameter zrc20 before it is assigned to the gasCoinZRC20ByChainId mapping setGasCoinZRC20 in the SystemContract
+## Impact
+The vulnerability in the `setGasCoinZRC20` function (lines 129 to 138) arises from the lack of validation on the input parameter `zrc20` before it is assigned to the `gasCoinZRC20ByChainId` mapping. The function sets the ZRC20 address for a given chain ID, which is intended to represent the address of a ZRC20 token that can be used to pay for gas on that chain.
+
+The `setGasCoinZRC20` function is designed to update the mapping `gasCoinZRC20ByChainId`, which holds the ZRC20 token addresses used for gas payments on different chains. However, the function does not perform any checks to ensure that the provided `zrc20` address is a valid ZRC20 token contract. This lack of validation could lead to several potential issues:
+
+1. **Incorrect Address:** If an incorrect address is provided, the system might reference a non-existent or non-compliant ZRC20 token, leading to failed transactions or unexpected behavior when attempting to use the token for gas payments.
+
+2. **Malicious Address:** A malicious actor with control over the `FUNGIBLE_MODULE_ADDRESS` could intentionally set a malicious contract address as the ZRC20 token. This could enable the malicious contract to execute unintended logic when users interact with it, thinking they are paying for gas.
+
+3. **Denial of Service:** By setting the `zrc20` address to a contract that does not implement the ZRC20 interface correctly or at all, the system's ability to process gas payments could be disrupted, potentially causing a denial of service for operations that rely on this functionality.
+
+**Vulnerable setGAsCoinZRC20 function**
+```sol
+    function setGasCoinZRC20(uint256 chainID, address zrc20) external {
+        if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
+        gasCoinZRC20ByChainId[chainID] = zrc20;
+        emit SetGasCoin(chainID, zrc20);
+    }
+```
+
+## Proof of Concept
+
+**Exploit of setGasCoinZRC20 in hardhat**
+```repos/protocol-contracts/test/ZRC20.spec.ts```
+```ts
+import { AddressZero } from "@ethersproject/constants";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SystemContract, ZRC20 } from "@typechain-types";
+import { expect } from "chai";
+import { parseEther } from "ethers/lib/utils";
+import { ethers } from "hardhat";
+
+import { FUNGIBLE_MODULE_ADDRESS } from "./test.helpers";
+const hre = require("hardhat");
+
+describe("ZRC20 tests", () => {
+  let ZRC20Contract: ZRC20;
+  let systemContract: SystemContract;
+  let owner, fungibleModuleSigner: SignerWithAddress;
+  let addrs: SignerWithAddress[];
+
+  beforeEach(async () => {
+    [owner, ...addrs] = await ethers.getSigners();
+
+    // Impersonate the fungible module account
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [FUNGIBLE_MODULE_ADDRESS],
+    });
+
+    // Get a signer for the fungible module account
+    fungibleModuleSigner = await ethers.getSigner(FUNGIBLE_MODULE_ADDRESS);
+    hre.network.provider.send("hardhat_setBalance", [FUNGIBLE_MODULE_ADDRESS, parseEther("1000000").toHexString()]);
+
+    const SystemContractFactory = await ethers.getContractFactory("SystemContractMock");
+    systemContract = (await SystemContractFactory.deploy(AddressZero, AddressZero, AddressZero)) as SystemContract;
+
+    const ZRC20Factory = await ethers.getContractFactory("ZRC20");
+    ZRC20Contract = (await ZRC20Factory.connect(fungibleModuleSigner).deploy(
+      "TOKEN",
+      "TKN",
+      18,
+      1,
+      1,
+      0,
+      systemContract.address
+    )) as ZRC20;
+  });
+
+  describe("ZRC20Contract", () => {
+    it("Should return name", async () => {
+      const name = await ZRC20Contract.name();
+      expect(name).to.equal("TOKEN");
+    });
+
+it("#setGasCoinZRC20", async () => {
+      const [maliciousAddress,me] = await ethers.getSigners();
+      systemContract.connect(me.address).setGasCoinZRC20(maliciousAddress.address);
+    });
+
+ });
+});
+```
+**Log results in hardhat**
+```log
+npx hardhat test --grep "#setGasCoinZRC20"
+
+ZRC20 tests
+    ZRC20Contract
+      ✔ #setGasCoinZRC20
+
+
+  1 passing (1s)
+```
+## Tools Used
+VS Code.  Hardhat.
+## Recommended Mitigation Steps
+To mitigate this vulnerability, the `setGasCoinZRC20` function should include validation to ensure that the provided `zrc20` address points to a contract that implements the ZRC20 interface. This can be done by calling a function on the `zrc20` address that is expected to exist on a compliant ZRC20 token contract (e.g., `balanceOf` or `totalSupply`) and checking for successful execution. Additionally, consider implementing a permission model or a multi-signature requirement for calling this sensitive function to prevent unauthorised updates.
+
+To resolve the issue of unvalidated ZRC20 address assignment in the `setGasCoinZRC20` function, implement the following recommendations:
+
+1. **Interface Compliance Check:**
+   Add a check to confirm that the `zrc20` address provided adheres to the ZRC20 token interface. This can be done by calling a standard function from the ZRC20 interface, such as `totalSupply`, and ensuring it does not revert.
+
+   Example:
+   ```solidity
+   function isContract(address _addr) internal view returns (bool) {
+       uint32 size;
+       assembly {
+           size := extcodesize(_addr)
+       }
+       return (size > 0);
+   }
+
+   function validateZRC20(address zrc20) internal view {
+       require(isContract(zrc20), "Address must be a contract");
+       // Call to `totalSupply` to ensure it's a ZRC20 token
+       (bool success, ) = zrc20.call(abi.encodeWithSignature("totalSupply()"));
+       require(success, "Must implement ZRC20 interface");
+   }
+   ```
+
+   Then, in the `setGasCoinZRC20` function, call `validateZRC20(zrc20)` before updating the mapping.
+
+2. **Permission Model:**
+   Consider implementing a more robust permission model to control who can call the `setGasCoinZRC20` function. This could involve a multi-signature mechanism or a governance vote for such critical changes.
+
+3. **Event Logging:**
+   Ensure that an event is emitted after the successful update of the ZRC20 address. This is already in place with the `SetGasCoin` event, but it's worth reiterating the importance of event logging for tracking changes.
+
+By implementing these recommendations, you can significantly reduce the risk of incorrect or malicious ZRC20 addresses being set, thereby enhancing the security and reliability of the `SystemContract`.
