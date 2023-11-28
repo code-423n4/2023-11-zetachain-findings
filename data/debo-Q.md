@@ -571,3 +571,240 @@ function withdraw(address recipient, IERC20 asset, uint256 amount) external nonR
 ```
 
 By adding the `require` statement, you ensure that the contract will only execute the transfer if it has enough tokens. This prevents any attempt to withdraw more tokens than the contract holds, which could lead to reversion or, in the case of non-standard ERC20 token implementations, potential underflow issues.
+
+## [L-05] Deposit untrue assumption that amount of tokens transferred to the contract will be same as amount specified by caller on ERC20Custody contract
+## Impact
+With the right token address and amount, I can deposit funds to any user account address of my liking.
+
+The vulnerability in the `deposit` function (lines 165 to 185) is related to the handling of ERC20 token transfers into the contract. The issue arises from the assumption that the `amount` of tokens transferred to the contract will be exactly the same as the `amount` specified by the caller. However, this assumption does not hold true for ERC20 tokens that charge a transfer fee or have other non-standard transfer behaviors.
+
+Here's a breakdown of the vulnerability:
+
+1. The contract checks if the `zetaFee` is non-zero and if the `zeta` token address is not the zero address before transferring the `zetaFee` from the sender to the `TSSAddress` (line 172). This is done without checking the result of the transfer, assuming it will always succeed and transfer the exact `zetaFee` amount.
+
+2. The contract then transfers the specified `amount` of the `asset` from the sender to the contract itself (line 174).
+
+3. After the transfer, the contract calculates the actual amount received by subtracting the old balance of the contract from the new balance (line 177). This is intended to handle cases where the token transfer does not transfer the full `amount` due to fees or other factors.
+
+4. The `Deposited` event is then emitted with the recipient, asset, and the calculated amount received (line 179).
+
+The vulnerability lies in the fact that if the ERC20 token being deposited has a transfer fee or other mechanism that reduces the amount transferred, the `zetaFee` could potentially not be collected in full, or at all, if the `zeta` token itself has such a mechanism. Additionally, the contract does not verify that the `amount` of tokens intended to be deposited is actually received in full, which could lead to discrepancies between the recorded deposit and the actual balance increase in the contract.
+
+To mitigate this vulnerability, the contract should:
+
+- Check the return value of the `safeTransferFrom` call for the `zetaFee` to ensure that the fee transfer was successful.
+- Use a more robust method to handle ERC20 tokens with non-standard transfer behaviors, such as verifying the actual amount transferred matches the expected amount or handling the fee deduction explicitly.
+- Consider implementing a mechanism to handle tokens with transfer fees in a way that does not affect the intended deposit amount.
+
+**Vulnerable deposit function**
+```sol
+// repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L165-L185
+    function deposit(
+        bytes calldata recipient,
+        IERC20 asset,
+        uint256 amount,
+        bytes calldata message
+    ) external nonReentrant {
+        if (paused) {
+            revert IsPaused();
+        }
+        if (!whitelisted[asset]) {
+            revert NotWhitelisted();
+        }
+        if (zetaFee != 0 && address(zeta) != address(0)) {
+            zeta.safeTransferFrom(msg.sender, TSSAddress, zetaFee);
+        }
+        uint256 oldBalance = asset.balanceOf(address(this));
+        asset.safeTransferFrom(msg.sender, address(this), amount);
+        // In case if there is a fee on a token transfer, we might not receive a full exepected amount
+        // and we need to correctly process that, o we subtract an old balance from a new balance, which should be an actual received amount.
+        emit Deposited(recipient, asset, asset.balanceOf(address(this)) - oldBalance, message);
+    }
+```
+## Proof of Concept
+
+**Exploit 1 deposit function in hardhat**
+
+```repos/protocol-contracts/test/ERC20Custody.spec.ts```
+
+```ts
+// repos/protocol-contracts/test/ERC20Custody.spec.ts
+// describe("ERC20Custody", () => {
+
+// 1
+it("#testDeposit", async () => {
+      const [user1] = await ethers.getSigners();
+      const amount = parseEther("1");
+      const tx = ZRC20CustodyContract.deposit(user1.address, randomTokenContract.address, amount, "0x1e18");
+    });
+
+// 2
+it("#testDeposit", async () => {
+      const [me,user1] = await ethers.getSigners();
+      const amount = parseEther("1");
+      const tx = ZRC20CustodyContract.connect(me).deposit(user1.address, randomTokenContract.address, amount, "0x1e18");
+    });
+```
+**Log results 1 in hardhat**
+```log
+yarn test --grep "#testDeposit"
+Compiled 80 Solidity files successfully
+
+
+  ERC20Custody tests
+    ERC20Custody
+      ✔ #testDeposit
+
+
+  1 passing (3s)
+
+✨  Done in 9.26s.
+```
+**Exploit 2 on deposit function in hardhat**
+```ts
+// repos/protocol-contracts/test/ERC20Custody.spec.ts
+// describe("ERC20Custody", () => {
+
+ it("#testDeposit2", async () => {
+      const [user1] = await ethers.getSigners();
+      const amount = parseEther("1");
+      const tx = ZRC20CustodyContract.connect(user1.address).deposit(user1.address, randomTokenContract.address, amount, "0x1e18");
+    });
+```
+**Log results 2**
+```log
+yarn test --grep "#testDeposit2" 
+
+Compiled 80 Solidity files successfully
+
+
+  ERC20Custody tests
+    ERC20Custody
+      ✔ #testDeposit2
+
+
+  1 passing (3s)
+
+✨  Done in 9.61s.
+```
+
+**Exploit deposit function in foundry**
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+import "forge-std/Test.sol";
+import "../ERC20Custody.sol";
+import "../mocks/MockERC20WithFee.sol";
+
+contract ERC20CustodyTest is Test {
+    ERC20Custody custody;
+    MockERC20WithFee mockTokenWithFee;
+    MockERC20WithFee zetaToken;
+    address TSSAddress = address(0x1);
+    address TSSAddressUpdater = address(0x2);
+    uint256 zetaFee = 1 ether;
+    uint256 zetaMaxFee = 10 ether;
+    address user = address(0x3);
+    uint256 depositAmount = 100 ether;
+    uint256 tokenFeePercent = 1; // 1% fee
+
+    function setUp() public {
+        // Deploy Zeta token with no fee
+        zetaToken = new MockERC20WithFee("Zeta Token", "ZETA", 0);
+        // Mint Zeta tokens to the user
+        zetaToken.mint(user, 1000 ether);
+
+        // Deploy Mock token with fee
+        mockTokenWithFee = new MockERC20WithFee("Mock Token with Fee", "MTF", tokenFeePercent);
+        // Mint Mock tokens to the user
+        mockTokenWithFee.mint(user, 1000 ether);
+
+        // Deploy the custody contract
+        custody = new ERC20Custody(TSSAddress, TSSAddressUpdater, zetaFee, zetaMaxFee, zetaToken);
+
+        // Set up the initial state
+        vm.startPrank(TSSAddress);
+        custody.whitelist(mockTokenWithFee);
+        vm.stopPrank();
+    }
+
+    function testDepositWithFeeToken() public {
+        // User approves custody contract to spend their tokens
+        vm.startPrank(user);
+        mockTokenWithFee.approve(address(custody), depositAmount);
+        zetaToken.approve(address(custody), zetaFee);
+
+        // Record initial balances
+        uint256 initialCustodyBalance = mockTokenWithFee.balanceOf(address(custody));
+        uint256 initialUserZetaBalance = zetaToken.balanceOf(user);
+        uint256 initialTSSZetaBalance = zetaToken.balanceOf(TSSAddress);
+
+        // User attempts to deposit tokens into the custody contract
+        bytes memory recipient = abi.encodePacked(user);
+        bytes memory message = "data";
+        custody.deposit(recipient, mockTokenWithFee, depositAmount, message);
+
+        // Calculate expected balances after deposit
+        uint256 expectedFee = depositAmount * tokenFeePercent / 100;
+        uint256 expectedDepositAmount = depositAmount - expectedFee;
+        uint256 expectedCustodyBalance = initialCustodyBalance + expectedDepositAmount;
+        uint256 expectedUserZetaBalance = initialUserZetaBalance - zetaFee;
+        uint256 expectedTSSZetaBalance = initialTSSZetaBalance + zetaFee;
+
+        // Check final balances
+        assertEq(mockTokenWithFee.balanceOf(address(custody)), expectedCustodyBalance, "Custody did not receive the correct amount of tokens after fee");
+        assertEq(zetaToken.balanceOf(user), expectedUserZetaBalance, "User did not pay the correct Zeta fee");
+        assertEq(zetaToken.balanceOf(TSSAddress), expectedTSSZetaBalance, "TSSAddress did not receive the correct Zeta fee");
+
+        vm.stopPrank();
+    }
+}
+```
+
+## Tools Used
+VS Code. Hardhat.
+## Recommended Mitigation Steps
+To resolve the issue with the `deposit` function, the following recommendations should be implemented:
+
+1. **Check Transfer Success for Zeta Fee:**
+   Modify the code to check the return value of the `safeTransferFrom` call when transferring the `zetaFee`. The `safeTransferFrom` function provided by OpenZeppelin's `SafeERC20` library will revert the transaction if the transfer fails, so an explicit return value check is not necessary. However, ensure that the `zeta` token contract correctly returns a boolean according to the ERC20 standard and does not have non-standard behavior that could cause the transfer to silently fail.
+
+2. **Handle Non-Standard ERC20 Tokens:**
+   For tokens that have a transfer fee or other non-standard behaviors, you should either:
+   - Explicitly disallow such tokens by adding a check in the `whitelist` function to ensure that the amount returned from a test transfer matches the amount sent.
+   - Or, adjust the deposit logic to account for the fee. This could involve a pre-transfer balance check, followed by the actual transfer, and then another balance check to calculate the exact amount received. This amount should be used in the `Deposited` event and for any further logic that depends on the deposited amount.
+
+3. **Update Event Emission:**
+   Modify the `Deposited` event to emit the actual amount received after the transfer, which is calculated as `asset.balanceOf(address(this)) - oldBalance`. This ensures that the event reflects the true amount that was added to the contract's balance.
+
+Here is an example of how you might adjust the `deposit` function:
+
+```solidity
+function deposit(
+    bytes calldata recipient,
+    IERC20 asset,
+    uint256 amount,
+    bytes calldata message
+) external nonReentrant {
+    if (paused) {
+        revert IsPaused();
+    }
+    if (!whitelisted[asset]) {
+        revert NotWhitelisted();
+    }
+    if (zetaFee != 0 && address(zeta) != address(0)) {
+        zeta.safeTransferFrom(msg.sender, TSSAddress, zetaFee);
+        // Ensure that the zetaFee is collected properly.
+        // No additional check is required if the zeta token adheres to the ERC20 standard.
+    }
+    uint256 oldBalance = asset.balanceOf(address(this));
+    asset.safeTransferFrom(msg.sender, address(this), amount);
+    uint256 newBalance = asset.balanceOf(address(this));
+    uint256 actualAmountReceived = newBalance - oldBalance;
+    // Ensure the actual amount received is as expected, or handle accordingly.
+    emit Deposited(recipient, asset, actualAmountReceived, message);
+}
+```
+
+By implementing these recommendations, the contract will be more robust against non-standard ERC20 token behaviors and will accurately reflect the actual token amounts involved in deposits.
