@@ -434,3 +434,140 @@ To resolve the issue of unvalidated ZRC20 address assignment in the `setGasCoinZ
    Ensure that an event is emitted after the successful update of the ZRC20 address. This is already in place with the `SetGasCoin` event, but it's worth reiterating the importance of event logging for tracking changes.
 
 By implementing these recommendations, you can significantly reduce the risk of incorrect or malicious ZRC20 addresses being set, thereby enhancing the security and reliability of the `SystemContract`.
+
+## [L-04] Withdraw lack of validation that the amount is actually available in the contract's balance in the ERC20Custody Contract
+## Impact
+The vulnerability in the `withdraw` function (lines 193 to 199) arises from the lack of validation that the `amount` parameter is actually available in the contract's balance for the specified `asset` before attempting to transfer it to the `recipient`. This could potentially allow the TSS (Threshold Signature Scheme) address, which is authorized to call this function, to issue a withdrawal of more tokens than the contract actually holds.
+
+Here's a breakdown of the issue:
+
+1. The `withdraw` function does not check the contract's current balance of the `asset` before executing the transfer.
+2. If the `amount` specified is greater than the contract's balance, the `safeTransfer` function from OpenZeppelin's `SafeERC20` library will revert due to ERC20's standard behavior when trying to transfer more tokens than an account holds.
+3. However, if the ERC20 token in question has an implementation that does not revert on insufficient balance (which is non-standard behavior but possible), this could lead to an underflow in the token contract, effectively allowing the TSS address to drain the asset from the custody contract.
+
+To mitigate this vulnerability, the `withdraw` function should include a check to ensure that the `amount` to be withdrawn is less than or equal to the contract's current balance of the `asset`. This can be done by adding a line like the following before the `safeTransfer` call:
+
+```solidity
+require(asset.balanceOf(address(this)) >= amount, "Insufficient funds");
+```
+
+This check ensures that the contract cannot attempt to transfer more tokens than it currently holds, preventing potential underflow issues and preserving the integrity of the withdrawal operation.
+
+**Vulnerable withdraw function**
+```sol
+    /**
+     * @dev Withdraw asset amount to recipient by custody TSS owner.
+     * @param recipient, recipient address.
+     * @param asset, ERC20 asset.
+     * @param amount, asset amount.
+     */
+    function withdraw(address recipient, IERC20 asset, uint256 amount) external nonReentrant onlyTSS {
+        if (!whitelisted[asset]) {
+            revert NotWhitelisted();
+        }
+        IERC20(asset).safeTransfer(recipient, amount);
+        emit Withdrawn(recipient, asset, amount);
+    }
+```
+
+## Proof of Concept
+**In this exploit the balance of the contract is 1 million ether and I have withdrawn more than 1 million ether of 2 million ether in the parameter called amount in hardhat**
+
+```repos/protocol-contracts/test/ERC20Custody.spec.ts```
+```ts
+import { MaxUint256 } from "@ethersproject/constants";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { AttackerContract, ERC20Custody, ERC20Mock, ZetaEth } from "@typechain-types";
+import { expect } from "chai";
+import { parseEther } from "ethers/lib/utils";
+import { ethers } from "hardhat";
+
+import { deployZetaEth } from "../lib/contracts.helpers";
+
+const ZETA_FEE = parseEther("0.01");
+const ZETA_MAX_FEE = parseEther("0.05");
+
+describe("ERC20Custody tests", () => {
+  let ZRC20CustodyContract: ERC20Custody;
+  let zetaTokenEthContract: ZetaEth;
+  let randomTokenContract: ERC20Mock;
+  let owner: SignerWithAddress;
+  let tssUpdater: SignerWithAddress;
+  let tssSigner: SignerWithAddress;
+  let addrs: SignerWithAddress[];
+
+  beforeEach(async () => {
+    [owner, tssUpdater, tssSigner, ...addrs] = await ethers.getSigners();
+
+    zetaTokenEthContract = await deployZetaEth({
+      args: [tssUpdater.address, 100_000],
+    });
+
+    await zetaTokenEthContract.connect(tssUpdater).transfer(owner.address, parseEther("1000"));
+
+    const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+    randomTokenContract = (await ERC20Factory.deploy(
+      "RandomToken",
+      "RT",
+      owner.address,
+      parseEther("1000000")
+    )) as ERC20Mock;
+
+    const ERC20CustodyFactory = await ethers.getContractFactory("ERC20Custody");
+    ZRC20CustodyContract = (await ERC20CustodyFactory.deploy(
+      tssSigner.address,
+      tssUpdater.address,
+      ZETA_FEE,
+      ZETA_MAX_FEE,
+      zetaTokenEthContract.address
+    )) as ERC20Custody;
+  });
+
+ describe("ERC20Custody", () => {
+    it("Should update the tss address", async () => {
+      await ZRC20CustodyContract.connect(tssUpdater).updateTSSAddress(addrs[0].address);
+      const tssAddress = await ZRC20CustodyContract.TSSAddress();
+      expect(tssAddress).to.equal(addrs[0].address);
+    });
+
+it("#More than 1 MILLION ETHER Should Not Withdraw", async () => {
+      await ZRC20CustodyContract.connect(tssSigner).whitelist(randomTokenContract.address);
+
+      const amount = parseEther("2000000");
+      await randomTokenContract.transfer(ZRC20CustodyContract.address, amount);
+
+      const tx = ZRC20CustodyContract.connect(tssSigner).withdraw(owner.address, randomTokenContract.address, amount);
+      await expect(tx)
+        .to.emit(ZRC20CustodyContract, "Withdrawn")
+        .withArgs(owner.address, randomTokenContract.address, amount);
+    });
+}...
+```
+**Log results of hardhat**
+```log
+> npx hardhat test --grep "#More than 1 MILLION ETHER Should Not Withdraw"
+ERC20Custody tests
+    ERC20Custody
+      ✔ #More than 1 MILLION ETHER Should Not Withdraw
+
+
+  1 passing (2s)
+```
+## Tools Used
+VS Code.  Hardhat.
+## Recommended Mitigation Steps
+To resolve the issue identified in the `withdraw` function, you should implement a balance check to ensure that the contract has sufficient funds of the `asset` before proceeding with the transfer. Here's how you can update the function to include this check:
+
+```solidity
+function withdraw(address recipient, IERC20 asset, uint256 amount) external nonReentrant onlyTSS {
+    if (!whitelisted[asset]) {
+        revert NotWhitelisted();
+    }
+    uint256 balance = asset.balanceOf(address(this));
+    require(balance >= amount, "Insufficient funds");
+    asset.safeTransfer(recipient, amount);
+    emit Withdrawn(recipient, asset, amount);
+}
+```
+
+By adding the `require` statement, you ensure that the contract will only execute the transfer if it has enough tokens. This prevents any attempt to withdraw more tokens than the contract holds, which could lead to reversion or, in the case of non-standard ERC20 token implementations, potential underflow issues.
