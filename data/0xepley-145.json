@@ -1,1 +1,8 @@
-ewogICJjb250ZXN0IjogMzA0LAogICJoYW5kbGUiOiAiMHhlcGxleSIsCiAgInJpc2siOiAiMiIsCiAgInRpdGxlIjogIkhhcmRjb2RlZCBEZWFkbGluZSBgTUFYX0RFQURMSU5FYCBpcyB0b28gbG9uZyIsCiAgImlzc3VlSWQiOiAxNDUsCiAgImlzc3VlVXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9jb2RlLTQyM240LzIwMjMtMTEtemV0YWNoYWluLWZpbmRpbmdzL2lzc3Vlcy8xNDUiCn0=
+{
+  "contest": 304,
+  "handle": "0xepley",
+  "risk": "2",
+  "title": "Hardcoded Deadline `MAX_DEADLINE` is too long",
+  "issueId": 145,
+  "issueUrl": "https://github.com/code-423n4/2023-11-zetachain-findings/issues/145"
+}
