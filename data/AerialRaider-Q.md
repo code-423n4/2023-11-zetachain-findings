@@ -1,3 +1,21 @@
+Here's a summary of the three Q/A findings for the ZetaChain project:
+
+Enhanced Liquidity Check in ZetaTokenConsumerTrident Contract
+Issue: The hasZetaLiquidity function in the ZetaTokenConsumerTrident contract needs a more robust method to check if there's enough liquidity in the pool for Zeta token swaps.
+Implementation: The function now interacts with the liquidity pool to get the current state of liquidity. It uses functions like getReserves from a Uniswap-like interface to determine if the pool reserves meet a predefined minimum liquidity threshold.
+Impact: This change allows for an accurate and real-time assessment of liquidity, crucial for efficient token swaps.
+
+Timelock Mechanism in ISystem Interface
+Issue: The proposal involves adding a timelock mechanism to the ISystem interface, introducing a delay between the initiation and execution of critical operations.
+Implementation: Functions like scheduleTimelockedOperation and executeTimelockedOperation have been added. Operations can only be executed after a minimum delay period, ensuring ample time for review and preparation.
+Impact: This approach enhances governance and security, providing a safeguard against hasty or malicious changes in decentralized systems.
+
+ZetaEth Contract Enhancements
+Issue: Proposed enhancements for the ZetaEth contract include adding features like access control, burnability, and pausability.
+Implementation: The contract now extends OpenZeppelin's ERC20 with ERC20Burnable, ERC20Pausable, and Ownable functionalities. Token holders can burn tokens, and the owner can pause or unpause token transfers.
+Impact: These additions offer greater control over the token's lifecycle and provide mechanisms to respond to emergencies or necessary upgrades.
+These modifications collectively aim to enhance the security, governance, and flexibility of the ZetaChain contracts, ensuring they are more robust and fit for the decentralized environment in which they operate.
+
 ## 1
 ## Risk rating 
 QA
