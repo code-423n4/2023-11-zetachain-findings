@@ -17,3 +17,10 @@ The events will not actually be emitted and this means that the listeners will n
 
 ## Mitigation
 Use the `emit` keyword to fire the events. 
+
+```Solidity
+function deposit() public payable {
+    balanceOf[msg.sender] += msg.value;
+    emit Deposit(msg.sender, msg.value);
+}
+```
