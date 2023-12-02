@@ -19,7 +19,7 @@ function unwhitelist(IERC20 asset) external onlyTSS {
     emit Unwhitelisted(asset);
 }
 ```
-`unWhitelist()` function does not check whether the asset in question isn't already unwhitelisted.
+`unwhitelist()` function does not check whether the asset in question isn't already unwhitelisted.
 
 ## Impact
 This would result to unnecessary Redundant State changes that might lead to  confusion as the state of the contract does not accurately represent the intended logic.
