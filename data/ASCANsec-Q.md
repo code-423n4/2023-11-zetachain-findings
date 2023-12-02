@@ -32,7 +32,7 @@
 
 ## Avoid using floating pragma
 [repos/protocol-contracts/contracts/zevm/WZETA.sol](https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/zevm/WZETA.sol#L5)
-[repos/protocol-contracts/contracts/evm/tools/interfaces/TridentConcentratedLiquidityPoolFactory.sol](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/interfaces/TridentConcentratedLiquidityPoolFactory.sol)
+
 
 ##### Recommendation
 ***Use a fixed pragma***
@@ -82,7 +82,7 @@ contracts/zevm/ZRC20.sol
 
 
 # [L2] Use of old solidity version
-repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol
+
 
 # [L3] Missing Interface Usage in WZETA Contract
 ***The contract [WZETA](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/WZETA.sol) does not utilize or import its associated interface, [IWZETA](https://github.com/code-423n4/2023-11-zetachain/tree/main/repos/protocol-contracts/contracts/zevm/interfaces/IWZETA.sol). This finding could potentially lead to a lack of clarity in the contract's intended structure and interactions. Interfaces serve as a crucial element in ensuring standardized communication between contracts and providing a clear definition of expected functionalities.***
