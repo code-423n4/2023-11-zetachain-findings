@@ -1,3 +1,33 @@
+# [L-01]: Redundant State changes.
+
+##### Instances:
+1. <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L144-L147>
+
+```Solidity
+function whitelist(IERC20 asset) external onlyTSS {
+    whitelisted[asset] = true;
+    emit Whitelisted(asset);
+}
+```
+`whitelist()` function does not check that the asset in question isn’t already whitelisted.
+
+2. <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L153-L156>
+
+```Solidity
+function unwhitelist(IERC20 asset) external onlyTSS {
+    whitelisted[asset] = false;
+    emit Unwhitelisted(asset);
+}
+```
+`unWhitelist()` function does not check whether the asset in question isn't already unwhitelisted.
+
+## Impact
+This would result to unnecessary Redundant State changes that might lead to  confusion as the state of the contract does not accurately represent the intended logic.
+
+## Mitigation
+> Any function that is involved in the changing of state in a contract should first ensure that the change for which it is designed to effect isn't already satisfied to to avoid redundant state changes
+
+
 # [NC-01]: Failed event firing due to omission of `emit` keyword. 
 
 Example: [deposit() function](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L20-L23)
