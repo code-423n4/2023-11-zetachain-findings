@@ -1,7 +1,7 @@
 # [L-01]: Redundant State changes.
 
-##### Instances:
-1. <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L144-L147>
+##### Context. 
+1. [ERC20Custody.sol#L144-L147](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L144-L147) 
 
 ```Solidity
 function whitelist(IERC20 asset) external onlyTSS {
@@ -11,7 +11,7 @@ function whitelist(IERC20 asset) external onlyTSS {
 ```
 `whitelist()` function does not check that the asset in question isn’t already whitelisted.
 
-2. <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L153-L156>
+2. [ERC20Custody.sol#L153-L156](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L153-L156) 
 
 ```Solidity
 function unwhitelist(IERC20 asset) external onlyTSS {
@@ -21,10 +21,10 @@ function unwhitelist(IERC20 asset) external onlyTSS {
 ```
 `unwhitelist()` function does not check whether the asset in question isn't already unwhitelisted.
 
-## Impact
+## Description
 This would result to unnecessary Redundant State changes that might lead to  confusion as the state of the contract does not accurately represent the intended logic.
 
-## Mitigation
+## Recommendation
 > Any function that is involved in the changing of state in a contract should first ensure that the change for which it is designed to effect isn't already satisfied to to avoid redundant state changes
 
 
@@ -38,14 +38,14 @@ function deposit() public payable {
 }
 ```
 
-## Impact
-The events will not actually be emitted and this means that the listeners will not receive it and this will break integrations that rely on events.
+## Description
+If the `emit` keyword is omitted, the events will not actually be emitted and this means that the listeners will not receive it and this will break integrations that rely on events.
 
-##### More instances.
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L25-L30>
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L36-L39>
+##### Context.
+- [WZETA.sol#L25-L30](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L25-L30) 
+- [WZETA.sol#L36-L39](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L36-L39) 
 
-## Mitigation
+## Recommendation
 > Use the `emit` keyword to fire the events. 
 
 ```Solidity
@@ -65,31 +65,60 @@ function name() public view virtual override returns (string memory) {
 }
 ```
 
-##### More instances.
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L91-L93>
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L99-L101>
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L107-L109>
+##### Context.
+- [ZRC20.sol#L91-L93](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L91-L93) 
+- [ZRC20.sol#L99-L101](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L99-L101) 
+- [ZRC20.sol#L107-L109](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L107-L109) 
 
-## Mitigation
+## Recommendation
 > Use `virtual` keyword when declaring a function in a base contract to indicate that it may be overridden by derived contracts.
 >Use the `override` keyword when implementing a function in a derived contract that is intended to override a virtual function in the base contract.
 
 # [NC-03]: Floating pragma effects
 
-## Impact
+## Description
 Using floating pragmas would mean that future compiler changes break functionalities in the contract.
 
 Example: 
 ```Solidity
 pragma solidity ^0.4.18;
 ```
-##### Instance:
-- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L1>
+##### Context. 
+- [WZETA.sol#L1](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L1) 
 
-## Mitigation
-Lock `pragmas` to specify the compiler version. This ensures that future compiler changes do not break functionality.
+## Recommendation
+> Lock `pragmas` to specify the compiler version. This ensures that future compiler changes do not break functionality.
 
 ```Solidity
 pragma solidity 0.4.18;
 ```
 
+# [NC-03]: Older Version Pragma
+
+##### Description
+Using very old versions of Solidity prevents benefits of bug fixes and newer security checks. Using the latest versions might make contracts susceptible to undiscovered compiler bugs.
+
+## Recommendation
+> Consider using the most recent version.
+
+# [NC-04]: Missing or Incomplete NatSpec
+
+##### Context
+[All Contracts]() 
+
+## Description
+Some functions are missing @notice/@dev NatSpec comments for the function, @param for all/some of their parameters and @return for return values. Given that NatSpec is an important part of code documentation, this affects code comprehension, auditability and usability.
+
+## Recommendation
+> Consider adding in full NatSpec comments for all functions to have complete code documentation for future use.
+
+# [NC-05]: Missing Visibility
+
+##### Context
+
+
+## Description
+It’s best practice to explicitly mark visibility of state variables.
+
+## Recommendation
+> Consider adding the missing visibility to the state variables.
