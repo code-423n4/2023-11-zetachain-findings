@@ -42,5 +42,24 @@ function name() public view virtual override returns (string memory) {
 
 ## Mitigation
 > Use `virtual` keyword when declaring a function in a base contract to indicate that it may be overridden by derived contracts.
->Use the `override` keyword when implementing a function in a derived contract that is intended to override a virtual function in the base contract
+>Use the `override` keyword when implementing a function in a derived contract that is intended to override a virtual function in the base contract.
+
+# [NC-03]: Floating pragma effects
+
+## Impact
+Using floating pragmas would mean that future compiler changes break functionalities in the contract.
+
+Example: 
+```Solidity
+pragma solidity ^0.4.18;
+```
+##### Instance:
+- <https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L1>
+
+## Mitigation
+Lock `pragmas` to specify the compiler version. This ensures that future compiler changes do not break functionality.
+
+```Solidity
+pragma solidity 0.4.18;
+```
 
