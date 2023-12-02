@@ -1,4 +1,4 @@
-# [L-01]: Failed event firing due to omission of `emit` keyword. 
+# [NC-01]: Failed event firing due to omission of `emit` keyword. 
 
 Example: [deposit() function](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/WZETA.sol#L20-L23)
 ```Solidity
@@ -25,7 +25,7 @@ function deposit() public payable {
 }
 ```
 
-# [NC-01]: Inaccurate use of `virtual` and `override` specifiers. 
+# [NC-02]: Inaccurate use of `virtual` and `override` specifiers. 
 ## Impact
 Using `virtual` and `override` specifiers   in the same function  is invalid syntax and will result in compiler error. 
 Example:
