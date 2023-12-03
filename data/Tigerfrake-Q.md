@@ -76,6 +76,11 @@ function name() public view virtual override returns (string memory) {
 
 # [NC-03]: Older Version Pragma
 
+##### Context. 
+```Solidity
+pragma solidity ^0.4.18; 
+```
+
 ##### Description
 Using very old versions of Solidity prevents benefits of bug fixes and newer security checks. Using the latest versions might make contracts susceptible to undiscovered compiler bugs.
 
