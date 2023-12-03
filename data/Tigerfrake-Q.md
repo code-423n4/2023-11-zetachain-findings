@@ -27,6 +27,27 @@ This would result to unnecessary Redundant State changes that might lead to  con
 ## Recommendation
 > Any function that is involved in the changing of state in a contract should first ensure that the change for which it is designed to effect isn't already satisfied to to avoid redundant state changes
 
+# [L-02]: Use a two-step transfer function for updating the `TSSAddress` privilege in the `ERC20Custody` contract. 
+
+## Description 
+The `ERC20Custody` has a very important `TSSAddress` privilege which can be updated via a `updateTSSAddress()` function.
+In order to prevent the role from mistakenly being transferred to an address that cannot handle it (e.g. due to a typo in the address), require that the recipient of the new `TSSAddress` privilege actively accepts via a `contract call` of its own.
+
+```Solidity
+function updateTSSAddress (address TSSAddress_) external onlyTSSUpdater {
+
+if (TSSAddress_ == address(0)) {
+
+revert ZeroAddress();
+
+}
+
+TSSAddress = TSSAddress_
+
+emit UpdatedTSSAddress (TSSAddress_);
+
+}
+```
 
 # [NC-01]: Failed event firing due to omission of `emit` keyword. 
 
