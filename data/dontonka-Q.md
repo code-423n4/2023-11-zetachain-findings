@@ -1,4 +1,4 @@
-**[[ 1 ]]** 
+### **[[ 1 ]]** 
 `evm_signer::TryProcessOutTx` `err` variable doesn't need to be declared [here](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L330), as it will be created [here](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L357) and is not used before that. So the [following code](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L351-L354) is also useless. So I suggest to remove those.
 ```diff
 	var to ethcommon.Address
@@ -37,7 +37,7 @@
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L351-L354
 
 
-**[[ 2 ]]** 
+### **[[ 2 ]]** 
 `evm_signer::TryProcessOutTx` does allow to send out CCTX tx to address(0), which would effectivelly cause a funds loss. This is low as self-reck. I would recommend to add the following conditions.
 
 ```diff
@@ -71,3 +71,18 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/
 ```
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L332-L349
+
+
+### **[[ 3 ]]** 
+`SystemContract.sol` could have some minor refactor introducing a `modifier` as follow to aliviate and make the code cleaner, and use it on all the `external` functions and the contructor as they are all gated with the `same condition` below.
+```diff
++    /**
++     * @dev Only Fungible address allowed modifier.
++     */
++     modifier onlyFungibble() {
++        if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
++        _;
++    }
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L51
