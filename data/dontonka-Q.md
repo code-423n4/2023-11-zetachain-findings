@@ -105,4 +105,46 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L122-L124
 
 
+### **[[ 5 ]]** 
+`ERC20Custody.sol` has a `divergence` in the implementation regarding fees, consider the following:
+- `zeta` which represent the Zeta token contract on the chain is `immutable`, so can't be changed after contract contruction.
+- `zetaFee` is not immutable and can be updated at any point in time by `updateZetaFee`.
 
+The `deposit` function along with the `constructor` are causing this divergence, as constructor allow zeta to be address(0) at construction, which deposit account for in the following code, but then if `zetaFee` are modified later on (Zeta wants to start charging fees on ERC20 deposits), those fees will never be able to be charged in case zeta was passed as address(0) at constrution.
+
+So I would recommend the following changes to mitigate this. While we are here, I would also suggest to add a validation for `zetaMaxFee` in the constructor since it's immutable too.
+
+```diff
+    constructor(address TSSAddress_, address TSSAddressUpdater_, uint256 zetaFee_, uint256 zetaMaxFee_, IERC20 zeta_) {
+        TSSAddress = TSSAddress_;
+        TSSAddressUpdater = TSSAddressUpdater_;
+        zetaFee = zetaFee_;
++       if (zeta == address(0)) revert ZeroAddress();
+        zeta = zeta_;
+        zetaMaxFee = zetaMaxFee_;
+    }
+
+    function deposit(
+        bytes calldata recipient,
+        IERC20 asset,
+        uint256 amount,
+        bytes calldata message
+    ) external nonReentrant {
+        if (paused) {
+            revert IsPaused();
+        }
+        if (!whitelisted[asset]) {
+            revert NotWhitelisted();
+        }
+-       if (zetaFee != 0 && address(zeta) != address(0)) {
++       if (zetaFee != 0) {
+            zeta.safeTransferFrom(msg.sender, TSSAddress, zetaFee);
+        }
+        uint256 oldBalance = asset.balanceOf(address(this));
+        asset.safeTransferFrom(msg.sender, address(this), amount);
+        // In case if there is a fee on a token transfer, we might not receive a full exepected amount
+        // and we need to correctly process that, o we subtract an old balance from a new balance, which should be an actual received amount.
+        emit Deposited(recipient, asset, asset.balanceOf(address(this)) - oldBalance, message);
+    }
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L177
