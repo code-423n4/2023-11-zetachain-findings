@@ -86,3 +86,23 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/
 ```
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L51
+
+
+### **[[ 4 ]]** 
+`ERC20Custody.sol` has the following useless code in `pause` function which I suggest to remove. Since the function is guarded by `onlyTSS` the modifier, which ensure `msg.sender == TSSAddress` before going even further into the function, this means `TSSAddress` can never be `address(0)`, which make this code totally useless. 
+```diff
+    function pause() external onlyTSS {
+        if (paused) {
+            revert IsPaused();
+        }
+-       if (TSSAddress == address(0)) {
+-           revert ZeroAddress();
+-       }
+        paused = true;
+        emit Paused(msg.sender);
+    }
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L122-L124
+
+
+
