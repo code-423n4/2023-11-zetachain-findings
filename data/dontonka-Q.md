@@ -148,3 +148,13 @@ So I would recommend the following changes to mitigate this. While we are here, 
     }
 ```
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L177
+
+
+### **[[ 6 ]]** 
+`evm_signer` is hardcoding the `gaslimit` at `21000` in multiples places (see links below). We have seen in previous EVM forks changing the gas cost of some key opcode, for example the SSTORE opcode. This can happen again in the future and if it does happen that this hardcoded gas limit is not enought anymore for the target chain, it will lead to CCTX not working as expected and failures on the network. Finally, since this value need to be working for all the EVM-supported chain, the gas costs can be different to a level that this hardcoded value will not satisfy all the chains.
+
+I would recommend to fetch this value at least from a configuration file, and have it per EVM chain, such that it is flexible enought to adapt to the future not requiring to recompile a new binary.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L210
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L237
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L286
