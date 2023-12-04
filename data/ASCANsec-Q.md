@@ -88,3 +88,5 @@ function, there are no checks regarding the quantity being set.
 
 # [L6] MISSING ADDRESS CHECKS IN FUNCTIONS
 
+# [L7] CODEBASE SHOULD FOLLOW THE INLINE COMMENT 
+
