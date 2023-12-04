@@ -5,83 +5,64 @@
 ***It is essential to have a clear contract naming convention to ensure readability and prevent confusion. The CommonError contract serves as a notification on the blockchain and is utilized by every function. However, the contract's current name does not reflect its nature as an interface, which could make it difficult for users to understand its purpose. Therefore, it is crucial to rename the contract appropriately to improve its clarity and readability.***
 
 ##### Recommendation 
-***Change CommonError.sol to ICommonError.sol since it an interface.***
+>Change CommonError.sol to ICommonError.sol since it is an interface.
 
 ## Wrong naming of interfaces in ZetaInteractorErrors
 ***There are numerous issues with the naming conventions of the Zeta Chain Protocol. However, it's important to note that when using a contract as an interface, it should be clearly specified as such. Unfortunately, the EVM interface in the Zeta Chain contract has naming flaws that can lead to confusion. In order to avoid such confusion, it's essential to follow best practices when naming a contract.***
 
 ##### Recommendation
-***Change [ZetaInteractorErros.sol](https://github.com/code-423n4/2023-11-zetachain/tree/main/repos/protocol-contracts/contracts/evm/interfaces) to IZetaInteractorErros.sol***
+>Change [ZetaInteractorErros.sol](https://github.com/code-423n4/2023-11-zetachain/tree/main/repos/protocol-contracts/contracts/evm/interfaces) to IZetaInteractorErros.sol
 
 ## Avoid the wrong naming of interfaces
 ***This issue affects multiple contracts in the Zeta EVM chain, such as zContract, ZetaErrors, TridalPoolRouter, ZetaInterfaces, and Interfaces.***
 
 ##### Recommendation
-***Change all interface contract I mentioned by adding ```I``` as a suffix.***
+>Change all interface contract I mentioned by adding ```I``` as a suffix.
 
 ## Unused contract
 ***It seems that the [contracts/zevm/UniswapPeriphery.sol](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/UniswapPeriphery.sol) and [Uniswap.sol](https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/zevm/Uniswap.sol#L4), [Zeta.eth.sol](sol) [repos/protocol-contracts/contracts/evm/interfaces/ZetaNonEthInterface.sol](https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/evm/interfaces/ZetaNonEthInterface.sol#L4), [contracts/evm/Zeta.eth.sol](https://github.com/search?q=repo%3Acode-423n4%2F2023-11-zetachain%20contracts%2Fevm%2FZeta.eth.sol&type=code),  was not imported into any other contract, indicating that it might be unused. it might be unused.***
 #### Recommendation 
-***Either it should be used or deleted***
+>Either it should be used or deleted
 
 ## No documentation about the interface functions
 ***It appears that there is a lack of documentation regarding the usage and origin of the interface contract in the Zeta EVM chain. It would be helpful to have more detailed information about which contracts are using this interface and where it was forked from.***
 
 #### Recommendation
-***Giving concise details about the interface will help users understand the protocol better when imported into a contract.***
+>Giving concise details about the interface will help users understand the protocol better when imported into a contract.
 
 ## Avoid using floating pragma
 [repos/protocol-contracts/contracts/zevm/WZETA.sol](https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/zevm/WZETA.sol#L5)
 
 
 ##### Recommendation
-***Use a fixed pragma***
+>Use a fixed pragma
 
 ## Avoid using the Old solidity version
 ***[repos/protocol-contracts/contracts/zevm/UniswapPeriphery.sol](https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e97413936018a0814c57d860/repos/protocol-contracts/contracts/zevm/UniswapPeriphery.sol#L4)***
 
+###### Mitigation
+> Use a fixed pragma solidity version in every contract that uses a floating pragma.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol
-repos/protocol-contracts/contracts/zevm/SystemContract.sol
-repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol
-repos/protocol-contracts/contracts/evm/ERC20Custody.sol
-repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol
-repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol
-repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol
-contracts/zevm/ZRC20.sol
 
 # [L1]No address zero checks in constructors
-***
+***Checking addresses against zero-address during initialization or during setting is a security best practice. However, such checks are missing in address variable initializations/changes in many places.*** 
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L53C1-L55C55
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L69C1-L73C34
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L76C1-L76C58
+
+###### Mitigation
+>Add necessary required checks to avoid deploying to zero address.
 
 
-# [L2] Use of old solidity version
+# [L2] Immutable variable lacks check in the constructor
+Constructors should check the address written in an immutable address variable is not the zero address.
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L34
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L33C1-L35C1
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L21
+https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L22
+
+###### Mitigation
+>Add a zero address check for [zeta](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L34), [uniswapv2FactoryAddress](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L33), [uniswapv2Router02Address](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L34C1-L34C55) and spans across other contract
 
 
 # [L3] Missing Interface Usage in WZETA Contract
@@ -92,5 +73,5 @@ contracts/zevm/ZRC20.sol
 ***Interfaces play a key role in standardizing contract interactions. Without importing and implementing the associated interface, there might be a risk of non-standard or unexpected behavior when interacting with other contracts or systems.***
 
 ### Recommendation
-***It is recommended to import the IWZETA interface in the WZETA contract and ensure that all the required functions are appropriately implemented. This step will enhance the contract's readability and provide a clear definition of its expected behavior.***
+>It is recommended to import the IWZETA interface in the WZETA contract and ensure that all the required functions are appropriately implemented. This step will enhance the contract's readability and provide a clear definition of its expected behavior.
 
