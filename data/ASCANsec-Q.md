@@ -75,3 +75,13 @@ https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a1
 ### Recommendation
 >It is recommended to import the IWZETA interface in the WZETA contract and ensure that all the required functions are appropriately implemented. This step will enhance the contract's readability and provide a clear definition of its expected behavior.
 
+
+# [L4] MISSING CAP FOR MAPPED GAS PRICE GOTTEN FROM CHAINID
+The msg.sender of the [SystemContract.sol](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L123C1-L127C6) contract, when setting the mapped [gasPriceByChainId[chainID] = price](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L125); protocol parameter within [setGasPrice()](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L123)
+function, there are no checks regarding the quantity being set.
+
+######
+> An important parameter for the protocol is [setGasPrice()](https://github.com/code-423n4/2023-11-zetachain/blob/6a9fdc29ce7e142facfcd6f15a16bf00b659d53b/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L123), it is strongly recommended to set a cap for it, which plays a vital role.
+
+
+# [L5] Emit events when all vital processes are completed
