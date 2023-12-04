@@ -85,3 +85,6 @@ function, there are no checks regarding the quantity being set.
 
 
 # [L5] Emit events when all vital processes are completed
+
+# [L6] MISSING ADDRESS CHECKS IN FUNCTIONS
+
