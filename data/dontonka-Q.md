@@ -158,3 +158,9 @@ I would recommend to fetch this value at least from a configuration file, and ha
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L210
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L237
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L286
+
+
+### **[[ 7 ]]** 
+`evm_signer::SignCancelTx` is unused code, would suggest to remove the function.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L209-L228
