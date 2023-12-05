@@ -90,3 +90,50 @@ function, there are no checks regarding the quantity being set.
 
 # [L7] CODEBASE SHOULD FOLLOW THE INLINE COMMENT 
 
+# [L8] Unsafe downcast
+
+When downsizing a data type to a smaller type, the higher-order bits are truncated, effectively introducing a modulo operation to the original value. It's crucial to note that without proper validation checks, this wrapping behavior may cause unexpected issues and potential bugs in the system. 
+
+Instances (4):
+
+File: evm/tools/ImmutableCreate2Factory.sol
+
+35:             uint160( // downcast to match the address type.
+
+114:             uint160( // downcast to match the address type.
+
+154:             uint160( // downcast to match the address type.
+
+File: zevm/SystemContract.sol
+
+103:             uint160(
+
+# [L9] Solidity version 0.8.20 may not work on other chains due to PUSH0
+During the deployment of contracts on alternative chains, compatibility concerns may arise with Solidity version 0.8.20. This issue is primarily due to the introduction of the PUSH0 opcode, a feature inherent to the Shanghai target Ethereum Virtual Machine (EVM) version. Not all Layer-2 solutions universally support this opcode, which can lead to deployment failures on such chains.
+
+The primary project may compile successfully with version 0.8.20. However, difficulties may occur when integrating or extending it with other projects. Such complications can lead to deployment challenges for contracts and libraries in these scenarios.
+Impact
+
+The PUSH0 opcode is not implemented on some Layer-2 solutions, including Arbitrum. Therefore, contracts deployed on these chains may become non-functional. The impact is high as contracts would become completely unusable, and funds sent to these addresses by unaware users would become irretrievable.
+Proof of Concept
+
+The issue occurs when contracts are compiled using Solidity version 0.8.20 and deployed on chains that do not support the PUSH0 opcode. The contract deploys but is non-functional. An example of this can be seen at: https://arbiscan.io/address/0x504ada2360ac822faf7ac703b350fadc8d931211#code. The contract returns false or nothing at all when reading values, which indicates a failure due to the PUSH0 opcode.
+Mitigation Steps
+
+To avoid this potential setback, it is recommended to use an earlier EVM version for contracts that will be deployed to other chains. 
+
+Instances (2):
+
+File: evm/testing/AttackerContract.sol
+
+2: pragma solidity ^0.8.0;
+
+File: zevm/WZETA.sol
+
+1: pragma solidity ^0.4.18;
+
+
+
+
+
+
