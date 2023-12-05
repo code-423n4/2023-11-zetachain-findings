@@ -164,3 +164,85 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/
 `evm_signer::SignCancelTx` is unused code, would suggest to remove the function.
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_signer.go#L209-L228
+
+### **[[ 8 ]]** 
+gRPC endpoint `ConvertGasToZeta` is `unsafe` which allow to `panic this endpoint` very easely by providing a gas price that can't be converted in Integer. Fortunatelly, there is a `recovery`, so the program doesn't crash, which is why this is only submitted as a `Low`, otherwise that would be probably a High as you could DoS `zetacored` at will. 
+
+This is confirmed throught directly reaching the public endpoint as follow:
+```
+REQUEST
+curl -X 'GET' -H 'accept: application/json' 'https://zetachain-athens.blockpi.network/lcd/v1/public/zeta-chain/crosschain/convertGasToZeta?chainId=97&gasLimit=100_000_'
+
+RESPONSE
+{"code":13,"details":[],"message":"cannot convert \"100_000_\" to big.Int"}
+```
+
+While a more normal error would be as follow (for unknow chain)
+```
+REQUEST
+curl -X 'GET' -H 'accept: application/json' 'https://zetachain-athens.blockpi.network/lcd/v1/public/zeta-chain/crosschain/convertGasToZeta?chainId=1&gasLimit=100_000'
+
+RESPONSE
+{"code":2,"details":[],"message":"codespace observer code 1102: chain not supported"}
+```
+
+I also added this unit test, which also confirm the issue and the a panic is occuring internally but recovered, as the error message match the panic.
+
+```
+// zeta_conversion_rate_test.go
+package keeper
+
+import (
+	"github.com/stretchr/testify/require"
+	"github.com/zeta-chain/zetacore/x/crosschain/types"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestConvertGasToZeta(t *testing.T) {
+	keeper, ctx := setupKeeper(t)
+	chainID := int64(1)
+	gasLimitTest := "100_000_"
+	keeper.SetGasPrice(ctx, types.GasPrice{
+		ChainId:     chainID,
+		MedianIndex: 0,
+		Prices:      []uint64{2},
+	})
+
+	req := &types.QueryConvertGasToZetaRequest{chainID, gasLimitTest}
+
+	fc, err := keeper.ConvertGasToZeta(ctx, req)
+	require.Nil(t, err)
+	assert.Nil(t, fc)
+}
+
+```
+
+```
+=== RUN   TestConvertGasToZeta
+--- FAIL: TestConvertGasToZeta (0.02s)
+panic: cannot convert "100_000_" to big.Int [recovered]
+	panic: cannot convert "100_000_" to big.Int
+
+goroutine 78 [running]:
+testing.tRunner.func1.2({0x1601920, 0xc000c61d40})
+	/usr/local/go/src/testing/testing.go:1526 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1529 +0x39f
+panic({0x1601920, 0xc000c61d40})
+	/usr/local/go/src/runtime/panic.go:884 +0x213
+cosmossdk.io/math.NewUintFromString(...)
+	/mnt/c/IX/GitProjects/go/pkg/mod/cosmossdk.io/math@v1.0.0-rc.0/uint.go:46
+github.com/zeta-chain/zetacore/x/crosschain/keeper.Keeper.ConvertGasToZeta({{0x1cb6db8, 0xc000c61d10}, {0x1c985b0, 0xc000c61c10}, {0x1c985d8, 0xc000c61c20}, {0x1c99e38, 0xc000be0bb0}, {{0x1cb2a20, 0xc000c61d00}, ...}, ...}, ...)
+	/mnt/c/IX/GitProjects/platform-tools/ETH_course/C4/2023-11-zetachain/repos/node/x/crosschain/keeper/zeta_conversion_rate.go:27 +0x85b
+github.com/zeta-chain/zetacore/x/crosschain/keeper.TestConvertGasToZeta(0xc000ef8340?)
+	/mnt/c/IX/GitProjects/platform-tools/ETH_course/C4/2023-11-zetachain/repos/node/x/crosschain/keeper/zeta_conversion_rate_test.go:23 +0x2ca
+testing.tRunner(0xc000ef8340, 0x1af4e20)
+	/usr/local/go/src/testing/testing.go:1576 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1629 +0x3ea
+```
+
+Even if this error is recovered, I would recommend the team to introduce a validation `ConvertGasToZeta` function such that the program return proper error, and not a panicked error, which doesn't give proper information about the error.
+
