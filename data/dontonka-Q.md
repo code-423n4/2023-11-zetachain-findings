@@ -296,3 +296,8 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L898
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L977
 
+### **[[ 11 ]]** 
+`FetchZetaZetaNonEthTokenContract` naming seems wrong, would recommend to rename is `FetchZetaNonEthTokenContract`.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L261-L263
+
