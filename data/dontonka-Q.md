@@ -269,7 +269,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 
 
 ### **[[ 10 ]]** 
-There is almost zero validation made in the `send` functions (from `ZetaConnector*.sol`), and later on not much when starting consumming it in `GetInboundVoteMsgForZetaSentEvent`. So I would recommended to at least validate 2 hanging fruits, so sending to address(0) and sending no value.
+There is almost zero validation made in the `send` functions (from `ZetaConnector*.sol`). I would recommended to at least validate these two hanging fruits, so sending to address(0) and sending no value.
 
 ```diff
     function send(ZetaInterfaces.SendInput calldata input) external override whenNotPaused {
