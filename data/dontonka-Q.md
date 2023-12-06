@@ -266,3 +266,31 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschai
 ```
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/Zeta.non-eth.sol#L40-L49
+
+
+### **[[ 10 ]]** 
+There is almost zero validation made in the `send` functions (from `ZetaConnector*.sol`), and later on not much when starting consumming it in `GetInboundVoteMsgForZetaSentEvent`. So I would recommended to at least validate 2 hanging fruits, so sending to address(0) and sending no value.
+
+```diff
+    function send(ZetaInterfaces.SendInput calldata input) external override whenNotPaused {
++       if (input.destinationAddress == address(0)) revert ZetaCommonErrors.InvalidAddress();
++       if (input.zetaValueAndGas == 0) revert ZetaCommonErrors.InvalidAmount();
+        
+        bool success = IERC20(zetaToken).transferFrom(msg.sender, address(this), input.zetaValueAndGas);
+        if (!success) revert ZetaTransferError();
+
+        emit ZetaSent(
+            tx.origin,
+            msg.sender,
+            input.destinationChainId,
+            input.destinationAddress,
+            input.zetaValueAndGas,
+            input.destinationGasLimit,
+            input.message,
+            input.zetaParams
+        );   
+    }
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ZetaConnector.eth.sol#L31-L45
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ZetaConnector.non-eth.sol#L40-L53
