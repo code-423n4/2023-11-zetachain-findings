@@ -294,3 +294,26 @@ There is almost zero validation made in the `send` functions (from `ZetaConnecto
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ZetaConnector.eth.sol#L31-L45
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ZetaConnector.non-eth.sol#L40-L53
+
+
+### **[[ 11 ]]** 
+It's possible to start a CCTX from a chain to the same chain, which doesn't make much sense. `GetInboundVoteMsgForZetaSentEvent` should cut such pattern early with the following protection.
+
+```diff
+func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector.ZetaConnectorNonEthZetaSent) (types.MsgVoteOnObservedInboundTx, error) {
+	ob.logger.ExternalChainWatcher.Info().Msgf("TxBlockNumber %d Transaction Hash: %s Message : %s", event.Raw.BlockNumber, event.Raw.TxHash, event.Message)
+	destChain := common.GetChainFromChainID(event.DestinationChainId.Int64())
+	if destChain == nil {
+		ob.logger.ExternalChainWatcher.Warn().Msgf("chain id not supported  %d", event.DestinationChainId.Int64())
+		return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("chain id not supported  %d", event.DestinationChainId.Int64())
+	}
++	if event.DestinationChainId.Int64() == ob.chain.ChainId {
++		ob.logger.ExternalChainWatcher.Warn().Msgf("destination chain is the same as origin chain %d ", +event.DestinationChainId.Int64())
++		return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("destination chain is the same as origin +chain  %d", event.DestinationChainId.Int64())
++	}
+
+	destAddr := clienttypes.BytesToEthHex(event.DestinationAddress)
+	if *destChain != common.ZetaChain() {
+    ...
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L140-L174
