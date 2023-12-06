@@ -297,7 +297,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
 
 
 ### **[[ 11 ]]** 
-It's possible to start a CCTX from a chain to the same chain, which doesn't make much sense. `GetInboundVoteMsgForZetaSentEvent` should cut such pattern early with the following protection.
+It's possible to start a CCTX from a chain to the same destination chain, which doesn't make much sense. `GetInboundVoteMsgForZetaSentEvent` should cut such pattern early with the following protection. Also you can used directly `destAddr` instead of computing it twice.
 
 ```diff
 func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector.ZetaConnectorNonEthZetaSent) (types.MsgVoteOnObservedInboundTx, error) {
@@ -314,6 +314,32 @@ func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector
 
 	destAddr := clienttypes.BytesToEthHex(event.DestinationAddress)
 	if *destChain != common.ZetaChain() {
-    ...
+		cfgDest, found := ob.cfg.GetEVMConfig(destChain.ChainId)
+		if !found {
+			return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("chain id not present in EVMChainConfigs  %d", event.DestinationChainId.Int64())
+		}
+		if strings.EqualFold(destAddr, cfgDest.ZetaTokenContractAddress) {
+			ob.logger.ExternalChainWatcher.Warn().Msgf("potential attack attempt: %s destination address is ZETA token contract address %s", destChain, destAddr)
+			return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("potential attack attempt: %s destination address is ZETA token contract address %s", destChain, destAddr)
+		}
+	}
+	return *GetInBoundVoteMessage(
+		event.ZetaTxSenderAddress.Hex(),
+		ob.chain.ChainId,
+		event.SourceTxOriginAddress.Hex(),
+-               clienttypes.BytesToEthHex(event.DestinationAddress),
++		destAddr,
+		destChain.ChainId,
+		sdkmath.NewUintFromBigInt(event.ZetaValueAndGas),
+		base64.StdEncoding.EncodeToString(event.Message),
+		event.Raw.TxHash.Hex(),
+		event.Raw.BlockNumber,
+		event.DestinationGasLimit.Uint64(),
+		common.CoinType_Zeta,
+		"",
+		ob.zetaClient.GetKeys().GetOperatorAddress().String(),
+		event.Raw.Index,
+	), nil
+}
 ```
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L140-L174
