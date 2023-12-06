@@ -266,3 +266,33 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschai
 ```
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/Zeta.non-eth.sol#L40-L49
+
+### **[[ 10 ]]** 
+`EVMChainClient::observeInTX` is consuming events from EVM external chains. It will consume `ZetaSent` and `Deposited` logs plus check `Native asset` being sent directly to the TSS address. While Deposited and Native asset are communicated to Zetacore using `PostSendEVMGasLimit`, somehow `ZetaSent` isn't, which seems wrong, so I would recommended to update this.
+
+```diff
+      ...
+		// Pull out arguments from logs
+		for logs.Next() {
+			msg, err := ob.GetInboundVoteMsgForZetaSentEvent(logs.Event)
+			if err != nil {
+				ob.logger.ExternalChainWatcher.Error().Err(err).Msg("error getting inbound vote msg")
+				continue
+			}
+
+-	                zetaHash, err := ob.zetaClient.PostSend(PostSendNonEVMGasLimit, &msg)
++	                zetaHash, err := ob.zetaClient.PostSend(PostSendEVMGasLimit, &msg)
+			if err != nil {
+				ob.logger.ExternalChainWatcher.Error().Err(err).Msg("error posting to zeta core")
+				return
+			}
+			ob.logger.ExternalChainWatcher.Info().Msgf("ZetaSent event detected and reported: PostSend zeta tx: %s", zetaHash)
+		}
+
+      ...
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L856
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L898
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L977
+
