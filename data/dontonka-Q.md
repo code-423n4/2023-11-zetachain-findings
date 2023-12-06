@@ -246,3 +246,23 @@ created by testing.(*T).Run
 
 Even if this error is recovered, I would recommend the team to introduce a validation `ConvertGasToZeta` function such that the program return proper error, and not a panicked error, which doesn't give proper information about the error.
 
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/zeta_conversion_rate.go#L27
+
+### **[[ 9 ]]** 
+`updateTssAndConnectorAddresses` from `ZetaNonEth.sol` is allowing TSS and Updater adresses to be updated to the **same address**, which defeat the purpose of `renounceTssAddressUpdater`. I would recommend to add the followind condition to protect against this.
+
+```diff
+    function updateTssAndConnectorAddresses(address tssAddress_, address connectorAddress_) external {
+        if (msg.sender != tssAddressUpdater && msg.sender != tssAddress) revert CallerIsNotTssOrUpdater(msg.sender);
+        if (tssAddress_ == address(0) || connectorAddress_ == address(0)) revert InvalidAddress();
++       if (tssAddress_ == connectorAddress_) revert InvalidAddress();
+
+        tssAddress = tssAddress_;
+        connectorAddress = connectorAddress_;
+
+        emit TSSAddressUpdated(msg.sender, tssAddress_);
+        emit ConnectorAddressUpdated(msg.sender, connectorAddress_);
+    }
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/Zeta.non-eth.sol#L40-L49
