@@ -307,7 +307,7 @@ func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector
 		ob.logger.ExternalChainWatcher.Warn().Msgf("chain id not supported  %d", event.DestinationChainId.Int64())
 		return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("chain id not supported  %d", event.DestinationChainId.Int64())
 	}
-+	if event.DestinationChainId.Int64() == ob.chain.ChainId {
++	if destChain.ChainId == ob.chain.ChainId {
 +		ob.logger.ExternalChainWatcher.Warn().Msgf("destination chain is the same as origin chain %d ", +event.DestinationChainId.Int64())
 +		return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("destination chain is the same as origin +chain  %d", event.DestinationChainId.Int64())
 +	}
