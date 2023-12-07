@@ -301,3 +301,18 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/evm_client.go#L261-L263
 
+### **[[ 12 ]]** 
+`ERC20Custody::whitelist` allow any address to be whitelisted, the only verification that is made (inside Observer before calling ERC20Custody contract) is that it's not address(0). But this open the room for operational mistake like whitelisting ZETA token itself. Doing so would cause potential problems, as now the user would be able to pass throught ERC20Custody to send ZETA, which is not expected, and could cause multiples sides effect.
+- Supply [not properly calculated](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/zeta_supply_checker.go#L216-L218) in ZetaSupplyChecker.
+- By-passing [security check](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L153-L156) that are present only when processing ZetaSent log, but not Deposited log.
+
+I would recommend todo the following verification in the contract (or do it in the Observer)
+
+```diff
+    function whitelist(IERC20 asset) external onlyTSS {
++       if (address(asset) == address(zeta)) revert InvalidAsset();
+
+        whitelisted[asset] = true;
+        emit Whitelisted(asset);
+    }
+```
