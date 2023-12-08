@@ -1,8 +1,0 @@
-{
-  "contest": 304,
-  "handle": "Mylifechangefast_eth",
-  "risk": "3",
-  "title": "Ownership Transfer After Contract Deployment will lead to loss of initial contract",
-  "issueId": 123,
-  "issueUrl": "https://github.com/code-423n4/2023-11-zetachain-findings/issues/123"
-}
