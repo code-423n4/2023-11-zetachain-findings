@@ -1,8 +1,0 @@
-{
-  "contest": 304,
-  "handle": "Mylifechangefast_eth",
-  "risk": "3",
-  "title": "Users contract can be compromised and can leads to loss of funds",
-  "issueId": 100,
-  "issueUrl": "https://github.com/code-423n4/2023-11-zetachain-findings/issues/100"
-}
