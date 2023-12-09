@@ -316,3 +316,34 @@ I would recommend todo the following verification in the contract (or do it in t
         emit Whitelisted(asset);
     }
 ```
+
+
+### **[[ 13 ]]** 
+
+The following protection code in `fungible\keeper\evm_hooks.go` is totally redundant as if you trace back where hooks are called (with `PostTxProcessing`) in **ethermint@v0.22.0::state_transition.go** you can see that `receipt` parameter even if passed as a pointer can `never be nil`. Otherwise in case you are paranoid and like redundant code and would like to keep it somehow, then add the same protection at least in `crosschain\keeper\evm_hooks.go` so that is consistent accross the protocol.
+
+```diff
+func (k Keeper) CheckPausedZRC20(ctx sdk.Context, receipt *ethtypes.Receipt) error {
+-	if receipt == nil {
+-		return nil
+-	}
+
+	// get non-duplicated list of all addresses that emitted logs
+	var addresses []ethcommon.Address
+```
+
+**ETHERMINT**
+```
+	if !res.Failed() {
+		receipt.Status = ethtypes.ReceiptStatusSuccessful
+		// Only call hooks if tx executed successfully.
+		if err = k.PostTxProcessing(tmpCtx, msg, receipt); err != nil {
+			// If hooks return error, revert the whole tx.
+			res.VmError = types.ErrPostTxProcessing.Error()
+			k.Logger(ctx).Error("tx post processing failed", "error", err)
+                        ...
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/fungible/keeper/evm_hooks.go#L31-L33
+
+
