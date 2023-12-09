@@ -347,3 +347,37 @@ func (k Keeper) CheckPausedZRC20(ctx sdk.Context, receipt *ethtypes.Receipt) err
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/fungible/keeper/evm_hooks.go#L31-L33
 
 
+### **[[ 14 ]]** 
+When `PostTxProcessing` I would recommend to use the same protection in `fungible` and `crosschain` when you iterage over logs. Right now crosschain is lacking the nil check (which might be redundant, I didn't check). Moreover, I would `highly recommend` to check the `Removed` field as indicated by the documention and ignore those. 
+
+```
+	// The Removed field is true if this log was reverted due to a chain reorganisation.
+	// You must pay attention to this field if you receive logs through a filter query.
+	Removed bool `json:"removed"`
+```
+
+```
+        ...
+
+	for _, log := range logs {
++		if log == nil || log.Removed {
++			continue
++		}
+
+		eventWithdrawal, err := k.ParseZRC20WithdrawalEvent(ctx, *log)
+		if err == nil {
+			if err := k.ProcessZRC20WithdrawalEvent(ctx, eventWithdrawal, emittingContract, txOrigin); err != nil {
+				return err
+			}
+		}
+		eZeta, err := ParseZetaSentEvent(*log, connectorZEVMAddr)
+		if err == nil {
+			if err := k.ProcessZetaSentEvent(ctx, eZeta, emittingContract, txOrigin); err != nil {
+				return err
+			}
+		}
+	}
+
+        ...
+```
+
