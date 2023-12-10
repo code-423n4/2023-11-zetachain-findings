@@ -381,3 +381,32 @@ When `PostTxProcessing` I would recommend to use the same protection in `fungibl
         ...
 ```
 
+### **[[ 15 ]]** 
+`ProcessZetaSentEvent` lacks any validation for the `DestinationAddress` which could translate in funds loss if sent to invalid address or address(0). I would recommend to use the same logic as in `ProcessZRC20WithdrawalEvent` which is better implementated, which validate the destination address is not empty and valid.
+
+```diff
+func (k Keeper) ProcessZetaSentEvent(ctx sdk.Context, event *connectorzevm.ZetaConnectorZEVMZetaSent, emittingContract ethcommon.Address, txOrigin string) error {
+	if !k.zetaObserverKeeper.IsInboundEnabled(ctx) {
+		return types.ErrNotEnoughPermissions
+	}
+
+        ...
+
+	if receiverChain.IsExternalChain() && coreParams.ZetaTokenContractAddress == "" {
+		return types.ErrUnableToSendCoinType
+	}
+-	toAddr := "0x" + hex.EncodeToString(event.DestinationAddress)
++	toAddr, err := receiverChain.EncodeAddress(event.DestinationAddress)
++	if err != nil {
++		return fmt.Errorf("cannot encode address %s: %s", event.DestinationAddress, err.Error())
++	}
++
+	senderChain := common.ZetaChain()
+	amount := math.NewUintFromBigInt(event.ZetaValueAndGas)
+
+        ...
+
+```
+
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/evm_hooks.go#L209
