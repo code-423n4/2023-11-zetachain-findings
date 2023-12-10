@@ -410,3 +410,50 @@ func (k Keeper) ProcessZetaSentEvent(ctx sdk.Context, event *connectorzevm.ZetaC
 
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/evm_hooks.go#L209
+
+
+### **[[ 16 ]]** 
+I would recommend to following change to not be `sending 0 amount value` accross Zetachain protocol which can happen if the amount of value sent is exactly the same as fees, granted that should be rare, which is why this is a Low severity. `PayGasInZetaAndUpdateCctx`, `PayGasNativeAndUpdateCctx` and `PayGasInERC20AndUpdateCctx` should use `GTE` instead of `GT`.
+
+```diff
+	// subtract the withdraw fee from the input amount
+-	if outTxGasFee.GT(inputAmount) {
++	if outTxGasFee.GTE(inputAmount) {
+		return cosmoserrors.Wrap(types.ErrNotEnoughGas, fmt.Sprintf("outTxGasFee(%s) more than available gas for tx (%s) | Identifiers : %s ",
+			outTxGasFee,
+			inputAmount,
+			cctx.LogIdentifierForCCTX()),
+		)
+	}
+	ctx.Logger().Info("Subtracting amount from inbound tx", "amount", inputAmount.String(), "fee", outTxGasFee.String())
+	newAmount := inputAmount.Sub(outTxGasFee)
+```
+
+```diff
+	// reduce the amount of the outbound tx
+-	if feeInZeta.GT(zetaBurnt) {
++	if feeInZeta.GTE(zetaBurnt) {
+		return cosmoserrors.Wrap(types.ErrNotEnoughZetaBurnt, fmt.Sprintf("feeInZeta(%s) more than zetaBurnt (%s) | Identifiers : %s ",
+			feeInZeta,
+			zetaBurnt,
+			cctx.LogIdentifierForCCTX()),
+		)
+	}
+```
+
+```diff
+	// subtract the withdraw fee from the input amount
+-	if math.NewUintFromBigInt(feeInZRC20).GT(inputAmount) {
++	if math.NewUintFromBigInt(feeInZRC20).GTE(inputAmount) {
+		return cosmoserrors.Wrap(types.ErrNotEnoughGas, fmt.Sprintf("feeInZRC20(%s) more than available gas for tx (%s) | Identifiers : %s ",
+			feeInZRC20,
+			inputAmount,
+			cctx.LogIdentifierForCCTX()),
+		)
+	}
+	newAmount := inputAmount.Sub(math.NewUintFromBigInt(feeInZRC20))
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L109
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L171
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L299
