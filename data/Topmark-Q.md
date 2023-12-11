@@ -27,6 +27,25 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
     }
 ```
 ### Report 2:
+#### No zeta Fee Validation in constructor
+As noted from code in the link provide below, no necessary validation was done for zetaFee_ to ensure it is not too low or above maximum allowed before assigning it a value, necessary validation should be done.
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L71
+```solidity
+ constructor(address TSSAddress_, address TSSAddressUpdater_, uint256 zetaFee_, uint256 zetaMaxFee_, IERC20 zeta_) {
+        TSSAddress = TSSAddress_;
+        TSSAddressUpdater = TSSAddressUpdater_;
++++     if (zetaFee_ == 0) {
++++            revert ZeroFee();
++++        }
++++        if (zetaFee_ > zetaMaxFee) {
++++           revert ZetaMaxFeeExceeded();
++++        }
+        zetaFee = zetaFee_;
+        zeta = zeta_;
+        zetaMaxFee = zetaMaxFee_;
+    }
+```
+### Report 3:
 #### Double Swap and Swap Fee
 Due to absence of validation in the getZetaFromToken(...) function implementation if user intends to swap zeta with weth, the transaction will go through but user will incur excess fees, proper validation should be done to ensure input token is not weth as provided below.
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L112
@@ -57,7 +76,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
         return amountOut;
     }
 ```
-###  Report 3:
+###  Report 4:
 #### Lack of Range for Gas Fee
 Lack of minimum and Maximum price range for gas Price By ChainId would allow setting price too low or two high, a new state should be set and necessary validation done to ensure a price boundary for "gasPriceByChainId" mappings
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L125
