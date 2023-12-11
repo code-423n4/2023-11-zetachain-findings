@@ -89,3 +89,15 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschai
 	}
 ```
 
+# If the extracted `zrc20` and the required `gasZRC20` are the same, directly modify the balance instead of calling `transferFrom`.
+
+If the extracted `zrc20` and the required `gasZRC20` are the same, such as extracting ETH to Ethereum, it's possible to directly modify the balance instead of calling `transferFrom`. This can save users the step of performing an `approve` operation.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L256-L260
+```solidity
+    function withdraw(bytes memory to, uint256 amount) external override returns (bool) {
+        (address gasZRC20, uint256 gasFee) = withdrawGasFee();
+        if (!IZRC20(gasZRC20).transferFrom(msg.sender, FUNGIBLE_MODULE_ADDRESS, gasFee)) {
+            revert GasFeeTransferFailed();
+        }
+```
