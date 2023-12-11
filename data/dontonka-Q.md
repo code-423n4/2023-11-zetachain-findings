@@ -457,3 +457,35 @@ I would recommend to following change to not be `sending 0 amount value` accross
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L109
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L171
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/gas_payment.go#L299
+
+
+
+### **[[ 17 ]]** 
+I would recommend to verify the receiver chain is supported in `ProcessZRC20WithdrawalEvent`. I understand that the condition is mostly redundant as that would require `foreignCoin.ForeignChainId` to be invalid somehow, but just to be safe.
+
+```diff
+func (k Keeper) ProcessZRC20WithdrawalEvent(ctx sdk.Context, event *zrc20.ZRC20Withdrawal, emittingContract ethcommon.Address, txOrigin string) error {
+	if !k.zetaObserverKeeper.IsInboundEnabled(ctx) {
+		return types.ErrNotEnoughPermissions
+	}
+	ctx.Logger().Info("ZRC20 withdrawal to %s amount %d\n", hex.EncodeToString(event.To), event.Value)
+	tss, found := k.GetTSS(ctx)
+	if !found {
+		return errorsmod.Wrap(types.ErrCannotFindTSSKeys, "ProcessZRC20WithdrawalEvent: cannot be processed without TSS keys")
+	}
+	foreignCoin, found := k.fungibleKeeper.GetForeignCoins(ctx, event.Raw.Address.Hex())
+	if !found {
+		return fmt.Errorf("cannot find foreign coin with emittingContract address %s", event.Raw.Address.Hex())
+	}
+
+	receiverChain := k.zetaObserverKeeper.GetParams(ctx).GetChainFromChainID(foreignCoin.ForeignChainId)
++	if receiverChain == nil {
++		return zetaObserverTypes.ErrSupportedChains
++	}
+	senderChain := common.ZetaChain()
+	toAddr, err := receiverChain.EncodeAddress(event.To)
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/evm_hooks.go#L126
+ 
+
