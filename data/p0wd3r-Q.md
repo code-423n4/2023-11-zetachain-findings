@@ -53,3 +53,39 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
             revert GasFeeTransferFailed();
         }
 ```
+
+# The application of `GasPriceIncreaseMax` does not match its description.
+
+Based on the comment below, `GasPriceIncreaseMax` represents the maximum percentage increase allowed.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/types/crosschain_flags.go#L16-L18
+```go
+	// Maximum gas price increase in percent of the median gas price
+	// 500 means the gas price can be increased by 5 times the median gas price at most
+	GasPriceIncreaseMax: 500,
+```
+
+However, in actual application, `GasPriceIncreaseMax` is used to compare with the value after the increase, rather than comparing the increased portion.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/abci.go#L85-L102
+```go
+	gasPriceIncrease := medianGasPrice.MulUint64(uint64(flags.GasPriceIncreasePercent)).QuoUint64(100)
+
+	// compute new gas price
+	currentGasPrice, err := cctx.GetCurrentOutTxParam().GetGasPrice()
+	if err != nil {
+		return math.ZeroUint(), math.ZeroUint(), err
+	}
+	newGasPrice := math.NewUint(currentGasPrice).Add(gasPriceIncrease)
+
+	// check limit -- use default limit if not set
+	gasPriceIncreaseMax := flags.GasPriceIncreaseMax
+	if gasPriceIncreaseMax == 0 {
+		gasPriceIncreaseMax = observertypes.DefaultGasPriceIncreaseFlags.GasPriceIncreaseMax
+	}
+	limit := medianGasPrice.MulUint64(uint64(gasPriceIncreaseMax)).QuoUint64(100)
+	if newGasPrice.GT(limit) {
+		return math.ZeroUint(), math.ZeroUint(), nil
+	}
+```
+
