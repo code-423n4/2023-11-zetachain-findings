@@ -1,4 +1,32 @@
-### Report 1:
+###  Report 1:
+#### Inconsistent Variable Assignment in SystemContract.sol contract
+The functions in the code provided below shows the flexibiliy in setting WZETAContractAddress and setting Zeta Gas Pool, both of this function use "wZetaContractAddress". The problem is each function can be set irrespective of if the other has been updated, which has the risk of creating inconsistencies, whenever setWZETAContractAddress(...) is called it should update the Gas Zeta Pool automatically as edit in the code below.
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L159
+```solidity
+---  function setWZETAContractAddress(address addr) external {
++++  function setWZETAContractAddress(address addr, uint256 chainID, address erc20) external {
+        if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
+        if (addr == address(0)) revert ZeroAddress();
+        wZetaContractAddress = addr;
++++     updateGasZetaPool(chainID, erc20 );
+        emit SetWZeta(wZetaContractAddress);
+    }
++++    function updateGasZetaPool(uint256 chainID, address erc20) internal {
++++    address pool = uniswapv2PairFor(uniswapv2FactoryAddress, wZetaContractAddress, erc20);
++++        gasZetaPoolByChainId[chainID] = pool;
++++        emit SetGasZetaPool(chainID, pool);
+    }
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L148
+```solidity
+       function setGasZetaPool(uint256 chainID, address erc20) external {
+        if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
+>>>        address pool = uniswapv2PairFor(uniswapv2FactoryAddress, wZetaContractAddress, erc20);
+        gasZetaPoolByChainId[chainID] = pool;
+        emit SetGasZetaPool(chainID, pool);
+    }
+```
+### Report 2:
 #### Double Swap and Swap Fee
 Due to absence of validation in the getZetaFromToken(...) function implementation if user intends to swap zeta with weth, the transaction will go through but user will incur excess fees, proper validation should be done to ensure input token is not weth as provided below.
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L112
@@ -29,4 +57,15 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
         return amountOut;
     }
 ```
-###  Report 2:
+###  Report 3:
+#### Lack of Range for Gas Fee
+Lack of minimum and Maximum price range for gas Price By ChainId would allow setting price too low or two high, a new state should be set and necessary validation done to ensure a price boundary for "gasPriceByChainId" mappings
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/zevm/SystemContract.sol#L125
+```solidity
+     function setGasPrice(uint256 chainID, uint256 price) external {
+        if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
++++       require( price > minimumPrice && price < maximumPrice , "Price out of boound" )
+>>>        gasPriceByChainId[chainID] = price;
+        emit SetGasPrice(chainID, price);
+    }
+```
