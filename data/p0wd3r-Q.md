@@ -11,6 +11,9 @@ Here, the range of `confirmedBlockNum` is checked twice for duplication.
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/bitcoin_client.go#L332-L335
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/bitcoin_client.go#L210-L218
 
+Here, the same getter is executed three times in succession.
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/bitcoin_client.go#L416-L435
+
 # Prints logs without determining the `to` of the donation transaction
 
 This loop iterates through all the transactions in the block, determining whether they are donations or not is not interpreting whether the `to` address is the project address.
