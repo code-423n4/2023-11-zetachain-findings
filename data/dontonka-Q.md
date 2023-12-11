@@ -461,7 +461,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschai
 
 
 ### **[[ 17 ]]** 
-I would recommend to verify the receiver chain is supported in `ProcessZRC20WithdrawalEvent`. I understand that the condition is mostly redundant as that would require `foreignCoin.ForeignChainId` to be invalid somehow, but just to be safe.
+I would recommend to verify the receiver chain is supported in `ProcessZRC20WithdrawalEvent`. I understand that the condition is mostly redundant in the moment as that would require `foreignCoin.ForeignChainId` to be invalid somehow (which seem impossible by [updating](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_update_core_params.go#L22-L24)), but just to be safe, it would be more explicit and safer when refactoring the code.
 
 ```diff
 func (k Keeper) ProcessZRC20WithdrawalEvent(ctx sdk.Context, event *zrc20.ZRC20Withdrawal, emittingContract ethcommon.Address, txOrigin string) error {
