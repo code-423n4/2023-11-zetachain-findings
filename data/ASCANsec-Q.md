@@ -85,6 +85,17 @@ function, there are no checks regarding the quantity being set.
 
 
 # [L5] Emit events when all vital processes are completed
+***It is important to keep a record of executed vital functions(swapping, creation of a contract with CREATE2, etc) for future reference. However, the Zeta contract has several functions that lack an "emit" function. This means that no information is stored on the blockchain, and there is no emission of events to help keep track of these functions.***
+This low issue spans multiple lines:
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L87
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L202
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L34C5-L56C6
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L58C1-L93C6
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L95C5-L122C6
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L124C4-L160C6
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L74C2-L96C6
+###### Recommendation 
+>Emit check in all vital functions.
 
 # [L6] MISSING ADDRESS CHECKS IN FUNCTIONS
 
@@ -133,6 +144,7 @@ File: zevm/WZETA.sol
 1: pragma solidity ^0.4.18;
 
 
+# [L10] Wrong naming of functions
 
 
 
