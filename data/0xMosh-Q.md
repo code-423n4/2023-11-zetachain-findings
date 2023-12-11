@@ -33,7 +33,7 @@ rewrite the function as follows to follow CEI :
     }
 ```
 
-## L-0:  Zero withdraw amounts should be reverted cause withdraw charges gas amount to user . 
+## L-02:  Zero withdraw amounts should be reverted cause withdraw charges gas amount to user . 
 `withdraw` function  Withraws ZRC20 tokens to external chains,  causes cctx module to send out outbound tx to the outbound chain. 
 `withdraw ` functionality in ZRC20.sol charges calculated gas Fee to the user and burns the token amount . If an user mistakenly inputs zero as amount it still charges gas fee from the user . Which should not be the case . 
  
@@ -59,12 +59,8 @@ Zero withdraw amounts should be reverted .
  function withdraw(bytes memory to, uint256 amount) external override returns (bool) {
 +       require(amount > 0 , "Amount should be larger than zero ");
         (address gasZRC20, uint256 gasFee) = withdrawGasFee();
-        if (!IZRC20(gasZRC20).transferFrom(msg.sender, FUNGIBLE_MODULE_ADDRESS, gasFee)) {
-            revert GasFeeTransferFailed();
-        }
-        _burn(msg.sender, amount);//@ci low zero amounts needs to be restricted here . 
-        emit Withdrawal(msg.sender, to, amount, gasFee, PROTOCOL_FLAT_FEE);
-        return true;
+
+        //...
     }
 ```
 
@@ -94,6 +90,62 @@ Add error msg to the code as follows :
     }
 ```
 
+## L-04:  title 
+
+
+```solidity 
+
+
+```
+
+code link : 
+
+## Recommendation : 
+
+```diff
+```
+## L-04:  title 
+
+
+```solidity 
+
+
+```
+
+code link : 
+
+## Recommendation : 
+
+```diff
+```
+## L-04:  title 
+
+
+```solidity 
+
+
+```
+
+code link : 
+
+## Recommendation : 
+
+```diff
+```
+## L-04:  title 
+
+
+```solidity 
+
+
+```
+
+code link : 
+
+## Recommendation : 
+
+```diff
+```
 ## L-04:  title 
 
 
