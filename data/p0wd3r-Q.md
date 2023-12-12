@@ -54,6 +54,18 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
         }
 ```
 
+If `TSSAddress == address(0)`, it cannot pass the `onlyTSS` verification, thus `ZeroAddress` will not be triggered.
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/ERC20Custody.sol#L118-L124
+```solidity
+    function pause() external onlyTSS {
+        if (paused) {
+            revert IsPaused();
+        }
+        if (TSSAddress == address(0)) {
+            revert ZeroAddress();
+        }
+```
+
 # The application of `GasPriceIncreaseMax` does not match its description.
 
 Based on the comment below, `GasPriceIncreaseMax` represents the maximum percentage increase allowed.
