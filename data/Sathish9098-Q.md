@@ -43,7 +43,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e9741393601
  */
 
 ```
-
+##
 
 ## [L-1] Hardcoded ChainId
 
@@ -76,14 +76,14 @@ Make chain id configurable
 
 ##
 
-## [L-2] Lack of sanity checks for ``address`` and ``uint256``
+## [L-2] Lack of sanity checks for ``address`` and ``uint256`` when assigning to state variable
 
 ### Impact
 The absence of sanity checks for address and uint256 types in the provided smart contract constructor can lead to several potential issues and vulnerabilities.
 
 Add checks to ensure that no critical addresses are set to the zero address. Additionally, verify the type of address if necessary (e.g., smart contract vs. EOA).
 
-Implement range checks and logical consistency validations for uint256 parameters. Ensure that values like gasLimit_ are within sensible limits.
+Implement range checks and logical consistency validations for uint256 parameters. Ensure that values like ``gasLimit_`` are within sensible limits.
 
 ### POC
 ```solidity
@@ -122,6 +122,10 @@ require(systemContractAddress_ != address(0), "System contract address cannot be
     require(gasLimit_ >= minGasLimit && gasLimit_ <= maxGasLimit, "Gas limit out of range");
 
 ```
+
+## 
+
+## [L-4] 
 
 
 
