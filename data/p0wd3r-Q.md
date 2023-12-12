@@ -127,3 +127,15 @@ func (k Keeper) AppendTss(ctx sdk.Context, tss types.TSS) {
 In both `SetTssAndUpdateNonce` and `InitGenesis`, where `SetTSS` is also called, the nonce is updated afterward.
 
 Since currently `AppendTss` is not called by any other function, it is placed under QA for review.
+
+# The implementation of obtaining `startNonce` in `CctxAllPending` does not match the comment.
+
+The comment mentions using 100, but the actual code uses 1000.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/keeper_cross_chain_tx.go#L204-L207
+```go
+	// now query the previous nonces up to 100 prior to find any pending cctx that we might have missed
+	// need this logic because a confirmation of higher nonce will automatically update the p.NonceLow
+	// therefore might mask some lower nonce cctx that is still pending.
+	startNonce := p.NonceLow - 1000
+```
