@@ -101,3 +101,15 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contrac
             revert GasFeeTransferFailed();
         }
 ```
+
+# There is a lack of statistics on the total fees acquired by the protocol.
+
+Currently, the collection of `protocolFlatFee` is directly added to `gasFee`, similar to the code below, and there is no record of the total amount of `protocolFlatFee` collected.
+
+```go
+	gasZRC20, gasLimit, gasPrice, protocolFlatFee, err := k.ChainGasParams(ctx, chainID)
+	if err != nil {
+		return cosmoserrors.Wrap(types.ErrCannotFindGasParams, err.Error())
+	}
+	outTxGasFee := gasLimit.Mul(gasPrice).Add(protocolFlatFee)
+```
