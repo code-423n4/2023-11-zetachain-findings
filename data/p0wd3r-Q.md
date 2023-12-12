@@ -113,3 +113,17 @@ Currently, the collection of `protocolFlatFee` is directly added to `gasFee`, si
 	}
 	outTxGasFee := gasLimit.Mul(gasPrice).Add(protocolFlatFee)
 ```
+
+# In `AppendTss`, there is a lack of nonce update after calling `SetTSS`.
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/keeper_tss.go#L16-L19
+```go
+func (k Keeper) AppendTss(ctx sdk.Context, tss types.TSS) {
+	k.SetTSS(ctx, tss)
+	k.SetTSSHistory(ctx, tss)
+}
+```
+
+In both `SetTssAndUpdateNonce` and `InitGenesis`, where `SetTSS` is also called, the nonce is updated afterward.
+
+Since currently `AppendTss` is not called by any other function, it is placed under QA for review.
