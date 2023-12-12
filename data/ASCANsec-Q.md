@@ -98,6 +98,10 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 >Emit check in all vital functions.
 
 # [L6] MISSING ADDRESS CHECKS IN FUNCTIONS
+***This is a low finding moreover it is necessary for address in function to be checked so any transfer of funds will not be sent to an arbitrary address(address(0)). In most of zeta functions the is this lack of address(0) check and it spans across so many contract, I don't think I can identify them all though.***
+
+##### Recommendation
+>Implicitly check if an address is not address zero(address(0)).
 
 # [L7] CODEBASE SHOULD FOLLOW THE INLINE COMMENT 
 
@@ -145,6 +149,12 @@ File: zevm/WZETA.sol
 
 
 # [L10] Wrong naming of functions
+In in the swaping contract when Zeta was using Uniswap forked functions, there is this function name that isn't written well. Obviously Zeta should have used the name in the Uniswap also in their contract but the named it wrongly, this is just a point out nothing much.
+
+###### Recommendation
+> Change hasZetaLiquidity to getZetaLiquidity in all contract it been used.
+
+# [L11] TYPOS
 
 
 
