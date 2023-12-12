@@ -156,6 +156,15 @@ In in the swaping contract when Zeta was using Uniswap forked functions, there i
 
 # [L11] TYPOS
 
-
+# L12] Finish up your docs
+***I came across a particular function which is undone or still going to be implemented, let me say this; When you guys are done with your audit make sure you guys finish up with some functions which are no done yet and not used too.***
+`E.G`
+```
+ function hasZetaLiquidity() external view override returns (bool) {
+        //@TODO: Implement
+        return false;
+    }
+```
+***Here you see is having a TODO inline comment tell us that you marked that out as something that will be done later. What I'm just saying in essence is that you guys should keep to not about this functions in your codebase because this code specially can lead to false return of value when a user wants to check if there is a liquidity in the pool before he/she swaps***
 
 
