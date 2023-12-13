@@ -488,4 +488,33 @@ func (k Keeper) ProcessZRC20WithdrawalEvent(ctx sdk.Context, event *zrc20.ZRC20W
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/evm_hooks.go#L126
  
+### **[[ 18 ]]** 
+There seems to be a divergence in the implementation regarding `DisableInboundOnly` and `IsOutboundEnabled`, which seems to indicate this is a bug.
 
+[DisableInboundOnly](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L54): in case crosschain flag is not found in the store, we fallback setting `IsOutboundEnabled` to true, which is permissive.
+[IsOutboundEnabled](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L40): in case crosschain flag is not found in the store, we fallback returning false, which is restrictive.
+
+The proper behavior seems to be with `IsOutboundEnabled`, so `DisableInboundOnly` should probably be aligned.
+
+```diff
+func (k Keeper) DisableInboundOnly(ctx sdk.Context) {
+-	flags, found := k.GetCrosschainFlags(ctx)
++	flags, _ := k.GetCrosschainFlags(ctx)
+-	if !found {
+-		flags.IsOutboundEnabled = true
+-	}
+	flags.IsInboundEnabled = false
+	k.SetCrosschainFlags(ctx, flags)
+}
+
+func (k Keeper) IsOutboundEnabled(ctx sdk.Context) (found bool) {
+	flags, found := k.GetCrosschainFlags(ctx)
+	if !found {
+		return false
+	}
+	return flags.IsOutboundEnabled
+}
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L40
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L54
