@@ -1,5 +1,7 @@
 # QA Report
 
+## LOW FINDINGS
+
 ##
 
 ## [L-3] Contradiction between documentation and implementation in ``deposit()`` Function
@@ -125,7 +127,320 @@ require(systemContractAddress_ != address(0), "System contract address cannot be
 
 ## 
 
-## [L-4] 
+## [L-4] receive()/payable fallback() function does not authorize requests
+
+### Impact
+Having no access control on the function (e.g. require(msg.sender == address(weth))) means that someone may send Ether to the contract, and have no way to get anything back out, which is a loss of funds. If the concern is having to spend a small amount of gas to check the sender against an immutable address, the code should at least have a function to rescue mistakenly-sent Ether.
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol
+
+101: receive() external payable {}
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L101
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerTrident.strategy.sol
+
+66: receive() external payable {}
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L66
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol
+
+72: receive() external payable {}
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L72
+
+### Recommended Mitigation
+Add rescue functions
+
+```solidity
+
+function rescueEther() external {
+        require(msg.sender == owner, "Only the owner can rescue Ether");
+        payable(owner).transfer(address(this).balance);
+    }
+
+``` 
+
+##
+
+## [L-] Implementing Dual-Phase Protocol address updates for enhanced security 
+
+### Impact
+
+A copy-paste error or a typo may end up bricking protocol functionality, or sending tokens to an address with no known private key. Consider implementing a two-step procedure for updating protocol addresses, where the recipient is set as pending, and must 'accept' the assignment by making an affirmative call. A straight forward way of doing this would be to have the target contracts implement [EIP-165](https://eips.ethereum.org/EIPS/eip-165), and to have the 'set' functions ensure that the recipient is of the right interface type.
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
+
+function updateSystemContractAddress(address addr) external onlyFungible {
+        SYSTEM_CONTRACT_ADDRESS = addr;
+        emit UpdatedSystemContract(addr);
+    }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L270-L273
+
+##
+
+## [L-] External call recipient may consume all transaction gas
+
+### Impact
+
+There is no limit specified on the amount of gas used, so the recipient can use up all of the transaction's gas, causing it to revert. Use addr.call{gas: <amount>}("") or [this]() library instead.
+
+### POC
+
+```solidity
+FILE: Breadcrumbs2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerPancakeV3.strategy.sol
+
+178: (bool sent, ) = destinationAddress.call{value: amountOut}("");
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L178
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerUniV3.strategy.sol
+
+152: (bool sent, ) = destinationAddress.call{value: amountOut}("");
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L152
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm
+/ZetaConnectorZEVM.sol
+
+
+96: (bool sent, ) = FUNGIBLE_MODULE_ADDRESS.call{value: input.zetaValueAndGas}("");
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol#L96
+
+##
+
+## [L-] Lack of address(0) in important SYSTEM_CONTRACT_ADDRESS update 
+
+### Impact
+Without a check for address(0), there's a risk that the SYSTEM_CONTRACT_ADDRESS could be set to this null address. This could happen either accidentally (due to a programming error) or maliciously (if an attacker gains control)
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
+
+   function updateSystemContractAddress(address addr) external onlyFungible {
+        SYSTEM_CONTRACT_ADDRESS = addr;
+        emit UpdatedSystemContract(addr);
+    }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L270-L273
+
+### Recommended Mitigation
+
+```diff
+
+function updateSystemContractAddress(address addr) external onlyFungible {
++    require(addr != address(0), "Address cannot be zero");
+
+    SYSTEM_CONTRACT_ADDRESS = addr;
+    emit UpdatedSystemContract(addr);
+}
+
+```
+
+##
+
+## [L-] Missing contract-existence checks before low-level calls
+
+### Impact
+
+Low-level calls return success if there is no code present at the specified address. In addition to the zero-address checks, add a check to verify that <address>.code.length > 0
+
+
+### POC
+
+```solidity
+FILE: Breadcrumbs2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerPancakeV3.strategy.sol
+
+178: (bool sent, ) = destinationAddress.call{value: amountOut}("");
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L178
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerUniV3.strategy.sol
+
+152: (bool sent, ) = destinationAddress.call{value: amountOut}("");
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV3.strategy.sol#L152
+
+##
+
+## [L-] Numbers downcast to addresses may result in collisions
+
+### Impact
+If a number is downcast to an address the upper bytes are truncated, which may mean that more than one value will map to the address
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+34: // determine the target address for contract deployment.
+        address targetDeploymentAddress = address(
+            uint160( // downcast to match the address type.
+                uint256( // convert to uint to truncate upper digits.
+                    keccak256( // compute the CREATE2 hash using 4 inputs.
+                        abi.encodePacked( // pack all inputs to the hash together.
+                            hex"ff", // start with 0xff to distinguish from RLP.
+                            address(this), // this contract will be the caller.
+                            salt, // pass in the supplied salt value.
+                            keccak256(abi.encodePacked(initCode)) // pass in the hash of initialization code.
+                        )
+                    )
+                )
+            )
+        );
+
+113: deploymentAddress = address(
+            uint160( // downcast to match the address type.
+                uint256( // convert to uint to truncate upper digits.
+                    keccak256( // compute the CREATE2 hash using 4 inputs.
+                        abi.encodePacked( // pack all inputs to the hash together.
+                            hex"ff", // start with 0xff to distinguish from RLP.
+                            address(this), // this contract will be the caller.
+                            salt, // pass in the supplied salt value.
+                            keccak256(abi.encodePacked(initCode)) // pass in the hash of initialization code.
+                        )
+                    )
+                )
+            )
+        );
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L33-L47
+
+##
+
+## [L-] State variables not capped at reasonable values
+
+### Impact
+Consider adding minimum/maximum value checks to ensure that the state variables below can never be used to excessively harm users, including via griefing
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
+
+ function updateGasLimit(uint256 gasLimit) external onlyFungible {
+        GAS_LIMIT = gasLimit;
+        emit UpdatedGasLimit(gasLimit);
+    }
+
+function updateProtocolFlatFee(uint256 protocolFlatFee) external onlyFungible {
+        PROTOCOL_FLAT_FEE = protocolFlatFee;
+        emit UpdatedProtocolFlatFee(protocolFlatFee);
+    }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L279-L291
+
+##
+
+## [L-] Unsafe downcast
+
+### Impact
+When a type is downcast to a smaller type, the higher order bits are truncated, effectively applying a modulo to the original value. Without any other checks, this wrapping will lead to unexpected behavior and bugs
+
+### POC
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+35:            uint160( // downcast to match the address type.
+36                uint256( // convert to uint to truncate upper digits.
+
+154: uint160( // downcast to match the address type.
+155:                uint256( // convert to uint to truncate upper digits.
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L114-L115
+
+##
+
+## [L-] Use of a single-step ownership transfer
+
+### Impact
+The existing transferOwnership function immediately transfers ownership to the new addres. Consider implementing a two-step variant, where the 'acceptor' of the ownership must call a separate function in order for the transfer to take effect. This can help to prevent mistakes where the wrong address is used, and ownership is irrecoverably lost.
+
+### POC
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+207: Ownable(deploymentAddress).transferOwnership(msg.sender);
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L207
+
+## NON CRITICAL FINDINGS
+
+##
+
+## [NC-] addresses shouldn't be hard-coded
+
+It is often better to declare addresses as immutable, and assign them via constructor arguments. This allows the code to remain the same across deployments on different networks, and avoids recompilation when addresses need to change.
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm
+/ZRC20.sol
+
+22: address public constant FUNGIBLE_MODULE_ADDRESS = 0x735b14BB79463307AAcBED86DAf3322B1e6226aB;
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L22
+
+##
+
+## [NC-] constants should be defined rather than using magic numbers
+
+Even assembly can benefit from using readable constants instead of hex/numeric literals
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm
+/ZRC20.sol
+
+
+
+```
+
+
+
+
+
+
+
+
 
 
 
