@@ -100,10 +100,14 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 # [L6] MISSING ADDRESS CHECKS IN FUNCTIONS
 ***This is a low finding moreover it is necessary for address in function to be checked so any transfer of funds will not be sent to an arbitrary address(address(0)). In most of zeta functions the is this lack of address(0) check and it spans across so many contract, I don't think I can identify them all though.***
 
+##### Impact
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZetaConnectorZEVM.sol#L114
+
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L270
+
 ##### Recommendation
 >Implicitly check if an address is not address zero(address(0)).
 
-# [L7] CODEBASE SHOULD FOLLOW THE INLINE COMMENT 
 
 # [L8] Unsafe downcast
 
@@ -149,15 +153,15 @@ File: zevm/WZETA.sol
 
 
 # [L10] Wrong naming of functions
-In in the swaping contract when Zeta was using Uniswap forked functions, there is this function name that isn't written well. Obviously Zeta should have used the name in the Uniswap also in their contract but the named it wrongly, this is just a point out nothing much.
+In in the swaping contract when Zeta was using Uniswap forked functions, there is this function name that wasn't written well. Obviously, Zeta should have used the name in the Uniswap also in their contract but they named it wrongly, this is just a point out nothing much.
 
 ###### Recommendation
-> Change hasZetaLiquidity to getZetaLiquidity in all contract it been used.
+> Change hasZetaLiquidity] to getZetaLiquidity in all contracts it has been used.
 
 # [L11] TYPOS
 
 # L12] Finish up your docs
-***I came across a particular function which is undone or still going to be implemented, let me say this; When you guys are done with your audit make sure you guys finish up with some functions which are no done yet and not used too.***
+***I came across a particular function that is undone or still going to be implemented, let me say this; When you guys are done with your audit make sure you guys finish up with some functions that are no done yet and not used too.***
 `E.G`
 ```
  function hasZetaLiquidity() external view override returns (bool) {
