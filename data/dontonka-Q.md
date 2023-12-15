@@ -520,7 +520,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L54
 
 ### **[[ 19 ]]** 
-`CleanAddressList` should add a `break` in the loop.
+`CleanAddressList` and `UpdateObserverList` should add a `break` in their loop.
 
 ```diff
 func CleanAddressList(addresslist []string, address string) []string {
@@ -537,4 +537,17 @@ func CleanAddressList(addresslist []string, address string) []string {
 	return addresslist
 }
 ```
+
+```diff
+func UpdateObserverList(list []string, oldObserverAddresss, newObserverAddress string) {
+	for i, observer := range list {
+		if observer == oldObserverAddresss {
+			list[i] = newObserverAddress
++                       break
+		}
+	}
+}
+```
+
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/hooks.go#L138-L149
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_update_observer.go#L94-L100
