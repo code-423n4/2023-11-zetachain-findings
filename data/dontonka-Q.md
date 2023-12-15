@@ -520,7 +520,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L54
 
 ### **[[ 19 ]]** 
-`CleanAddressList` and `UpdateObserverList` should add a `break` in their loop.
+`CleanAddressList`, `UpdateObserverList` and `GetAllObserverMappersForAddress` should add a `break` in their loop.
 
 ```diff
 func CleanAddressList(addresslist []string, address string) []string {
@@ -549,5 +549,29 @@ func UpdateObserverList(list []string, oldObserverAddresss, newObserverAddress s
 }
 ```
 
+```diff
+func (k Keeper) GetAllObserverMappersForAddress(ctx sdk.Context, address string) (mappers []*types.ObserverMapper) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ObserverMapperKey))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.ObserverMapper
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		addToList := false
+		for _, addr := range val.ObserverList {
+			if addr == address {
+				addToList = true
++                               break
+			}
+		}
+		if addToList {
+			mappers = append(mappers, &val)
+		}
+	}
+	return
+}
+```
+
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/hooks.go#L138-L149
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_update_observer.go#L94-L100
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/observer_mapper.go#L66-L84
