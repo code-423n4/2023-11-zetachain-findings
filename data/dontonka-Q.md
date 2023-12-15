@@ -518,3 +518,23 @@ func (k Keeper) IsOutboundEnabled(ctx sdk.Context) (found bool) {
 
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L40
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/crosschain_flags.go#L54
+
+### **[[ 19 ]]** 
+`CleanAddressList` should add a `break` in the loop.
+
+```diff
+func CleanAddressList(addresslist []string, address string) []string {
+	index := -1
+	for i, addr := range addresslist {
+		if addr == address {
+			index = i
++                       break
+		}
+	}
+	if index != -1 {
+		addresslist = RemoveIndex(addresslist, index)
+	}
+	return addresslist
+}
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/hooks.go#L138-L149
