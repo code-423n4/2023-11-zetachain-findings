@@ -575,3 +575,47 @@ func (k Keeper) GetAllObserverMappersForAddress(ctx sdk.Context, address string)
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/hooks.go#L138-L149
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_update_observer.go#L94-L100
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/observer_mapper.go#L66-L84
+
+
+### **[[ 20 ]]** 
+`GetInboundVoteMsgForZetaSentEvent` should use the variable instead of the doing the computation twice.
+
+```diff
+func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector.ZetaConnectorNonEthZetaSent) (types.MsgVoteOnObservedInboundTx, error) {
+	ob.logger.ExternalChainWatcher.Info().Msgf("TxBlockNumber %d Transaction Hash: %s Message : %s", event.Raw.BlockNumber, event.Raw.TxHash, event.Message)
+	destChain := common.GetChainFromChainID(event.DestinationChainId.Int64())
+	if destChain == nil {
+		ob.logger.ExternalChainWatcher.Warn().Msgf("chain id not supported  %d", event.DestinationChainId.Int64())
+		return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("chain id not supported  %d", event.DestinationChainId.Int64())
+	}
+	destAddr := clienttypes.BytesToEthHex(event.DestinationAddress)
+	if *destChain != common.ZetaChain() {
+		cfgDest, found := ob.cfg.GetEVMConfig(destChain.ChainId)
+		if !found {
+			return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("chain id not present in EVMChainConfigs  %d", event.DestinationChainId.Int64())
+		}
+		if strings.EqualFold(destAddr, cfgDest.ZetaTokenContractAddress) {
+			ob.logger.ExternalChainWatcher.Warn().Msgf("potential attack attempt: %s destination address is ZETA token contract address %s", destChain, destAddr)
+			return types.MsgVoteOnObservedInboundTx{}, fmt.Errorf("potential attack attempt: %s destination address is ZETA token contract address %s", destChain, destAddr)
+		}
+	}
+	return *GetInBoundVoteMessage(
+		event.ZetaTxSenderAddress.Hex(),
+		ob.chain.ChainId,
+		event.SourceTxOriginAddress.Hex(),
+-		clienttypes.BytesToEthHex(event.DestinationAddress),
++               destAddr,
+		destChain.ChainId,
+		sdkmath.NewUintFromBigInt(event.ZetaValueAndGas),
+		base64.StdEncoding.EncodeToString(event.Message),
+		event.Raw.TxHash.Hex(),
+		event.Raw.BlockNumber,
+		event.DestinationGasLimit.Uint64(),
+		common.CoinType_Zeta,
+		"",
+		ob.zetaClient.GetKeys().GetOperatorAddress().String(),
+		event.Raw.Index,
+	), nil
+}
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L162
