@@ -388,6 +388,34 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
+## [L-] Follow Check-Effect-Interaction pattern 
+
+``Check``: Validate all conditions and states before making any state changes. This involves ensuring that the inputs are valid, the sender is authorized, and any other preconditions are met.
+
+``Effects``: Update the state of your contract. This typically involves changing balances, updating storage variables, or in your case, burning tokens.
+
+``Interaction``: Interact with external contracts or addresses. This is where you send funds or call functions of other contracts.
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm
+/ZRC20.sol
+
+function withdraw(bytes memory to, uint256 amount) external override returns (bool) {
+        (address gasZRC20, uint256 gasFee) = withdrawGasFee();
+        if (!IZRC20(gasZRC20).transferFrom(msg.sender, FUNGIBLE_MODULE_ADDRESS, gasFee)) {
+            revert GasFeeTransferFailed();
+        }
+        _burn(msg.sender, amount);
+        emit Withdrawal(msg.sender, to, amount, gasFee, PROTOCOL_FLAT_FEE);
+        return true;
+    }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L256-L264
+
+
+##
+
 ## [L-] Use of a single-step ownership transfer
 
 ### Impact
@@ -422,17 +450,206 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] constants should be defined rather than using magic numbers
+## [NC-] Add inline comments for unnamed variables
 
-Even assembly can benefit from using readable constants instead of hex/numeric literals
+function foo(address x, address) -> function foo(address x, address /* y */)
 
 ```solidity
-FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm
-/ZRC20.sol
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerTrident.strategy.sol
 
+81: (address token0, address token1) = getPair(WETH9Address, zetaToken);
+
+111: (address token0, address token1) = getPair(inputToken, WETH9Address);
+
+147: (address token0, address token1) = getPair(zetaToken, WETH9Address);
+
+178: (address token0, address token1) = getPair(zetaToken, WETH9Address);
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L81
+
+##
+
+## [NC-] Array indices should be referenced via enums rather than via numeric literals
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerTrident.strategy.sol
+
+185: path[0] = pairPools1[0];
+186: path[1] = pairPools2[0];
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerTrident.strategy.sol#L185-L186
+
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L73-L74
+
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerUniV2.strategy.sol#L77-L79
+
+##
+
+## [NC-] Assembly block creates dirty bits
+
+Writing data to the free memory pointer without later updating the free memory pointer will cause there to be dirty bits at that memory location. Not updating the free memory pointer will make it [harder](https://docs.soliditylang.org/en/latest/ir-breaking-changes.html#cleanup) for the optimizer to reason about whether the memory needs to be cleaned, which may lead to worse optimizations. Annotate the block with assembly ("memory-safe") { ... } if the memory's value can be discarded. If the memory needs to be saved, update the free memory pointer in addtion to using the annotation. See this [link](https://docs.soliditylang.org/en/latest/assembly.html#memory-safety) for other cases where the annotation can be used.
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+ assembly {
+            // solhint-disable-line
+            let encoded_data := add(0x20, initCode) // load initialization code.
+            let encoded_size := mload(initCode) // load the init code's length.
+            deploymentAddress := create2(
+                // call CREATE2 with 4 arguments.
+                callvalue, // forward any attached value.
+                encoded_data, // pass in initialization code.
+                encoded_size, // pass in init code's length.
+                salt // pass in the salt value.
+            )
+        }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L53-L64
+
+##
+
+## [NC-] Assembly blocks should have extensive comments
+
+Assembly blocks take a lot more time to audit than normal Solidity code, and often have gotchas and side-effects that the Solidity versions of the same code do not. Consider adding more comments explaining what is being done in every step of the assembly code, and describe why assembly is being used instead of Solidity.
+
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+ assembly {
+            // solhint-disable-line
+            let encoded_data := add(0x20, initCode) // load initialization code.
+            let encoded_size := mload(initCode) // load the init code's length.
+            deploymentAddress := create2(
+                // call CREATE2 with 4 arguments.
+                callvalue, // forward any attached value.
+                encoded_data, // pass in initialization code.
+                encoded_size, // pass in init code's length.
+                salt // pass in the salt value.
+            )
+        }
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L53-L64
+
+##
+
+## [NC-] Cast to bytes or bytes32 for clearer semantic meaning
+
+Using a [cast](https://ethereum.stackexchange.com/questions/30912/how-to-compare-strings-in-solidity#answer-82739) on a single argument, rather than abi.encodePacked() makes the intended operation more clear, leading to less reviewer confusion.
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools/ZetaInteractor.sol
+
+10:  bytes32 constant ZERO_BYTES = keccak256(new bytes(0));
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaInteractor.sol#L10
+
+##
+
+## [NC-] Complex casting
+
+Consider whether the number of casts is really necessary, or whether using a different type would be more appropriate. Alternatively, add comments to explain in detail why the casts are necessary, and any implicit reasons why the cast does not introduce an overflow.
+
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ImmutableCreate2Factory.sol
+
+34: // determine the target address for contract deployment.
+        address targetDeploymentAddress = address(
+            uint160( // downcast to match the address type.
+                uint256( // convert to uint to truncate upper digits.
+                    keccak256( // compute the CREATE2 hash using 4 inputs.
+                        abi.encodePacked( // pack all inputs to the hash together.
+                            hex"ff", // start with 0xff to distinguish from RLP.
+                            address(this), // this contract will be the caller.
+                            salt, // pass in the supplied salt value.
+                            keccak256(abi.encodePacked(initCode)) // pass in the hash of initialization code.
+                        )
+                    )
+                )
+            )
+        );
+
+113: deploymentAddress = address(
+            uint160( // downcast to match the address type.
+                uint256( // convert to uint to truncate upper digits.
+                    keccak256( // compute the CREATE2 hash using 4 inputs.
+                        abi.encodePacked( // pack all inputs to the hash together.
+                            hex"ff", // start with 0xff to distinguish from RLP.
+                            address(this), // this contract will be the caller.
+                            salt, // pass in the supplied salt value.
+                            keccak256(abi.encodePacked(initCode)) // pass in the hash of initialization code.
+                        )
+                    )
+                )
+            )
+        );
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ImmutableCreate2Factory.sol#L33-L47
+
+##
+
+## [NC-] Consider adding a block/deny-list
+
+Doing so will significantly increase centralization, but will help to prevent hackers from using stolen tokens
+
+```solidity
+FILE: Breadcrumbs2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
+
+20: contract ZRC20 is IZRC20, IZRC20Metadata, ZRC20Errors {
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L20
+
+## 
+
+##[NC-] Consider adding emergency-stop functionality
+
+Adding a way to quickly halt protocol functionality in an emergency, rather than having to pause individual contracts one-by-one, will make in-progress hack mitigation faster and much less stressful.
+
+##
+
+## [NC-] Consider disallowing transfers to address(this)
+
+```solidity
+FILE : 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
+/ZetaTokenConsumerPancakeV3.strategy.sol
+
+135: IERC20(inputToken).safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+
+159: IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+193: IERC20(zetaToken).safeTransferFrom(msg.sender, address(this), zetaTokenAmount);
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/evm/tools/ZetaTokenConsumerPancakeV3.strategy.sol#L135
+
+##
+
+## [NC-] Consider moving msg.sender checks to a common authorization modifier
+
+```solidity
+FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
+
+53: if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
+69: if (msg.sender != FUNGIBLE_MODULE_ADDRESS) revert CallerIsNotFungibleModule();
+226: if (msg.sender != FUNGIBLE_MODULE_ADDRESS && msg.sender != SYSTEM_CONTRACT_ADDRESS) revert InvalidSender();
 
 
 ```
+https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/protocol-contracts/contracts/zevm/ZRC20.sol#L53
 
 
 
