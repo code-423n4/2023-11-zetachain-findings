@@ -620,3 +620,28 @@ func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector
 ```
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L162
 
+
+### **[[ 21 ]]** 
+There is a `missing nil` check in `AddBlockHeader` handler which will cause the `zetacored` to panic, but seems to recover or at least I was not able to generate a crash, which is why I submit this only as `Low`.
+
+While Observers that broadcast those AddBlockHeader message are being [verified](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/types/messages_add_block_header.go#L55), such that an unknown chain is not possible, there is always the risk of a `malicious Observer` (or `malicious user` that have access to the node machine which could use the CLI to broadcast) to broadcast a `malicious AddBlockHeader message` which would include an `unknown chain` and trigger this panic.
+
+I would recommend to add the missing nil check.
+
+```diff
+// AddBlockHeader handles adding a block header to the store, through majority voting of observers
+func (k msgServer) AddBlockHeader(goCtx context.Context, msg *types.MsgAddBlockHeader) (*types.MsgAddBlockHeaderResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// check authorization for this chain
+	chain := common.GetChainFromChainID(msg.ChainId)
++	if chain == nil {
++		return nil, types.ErrSupportedChains
++	}	
+	if ok := k.IsAuthorized(ctx, msg.Creator, chain); !ok {
+		return nil, types.ErrNotAuthorizedPolicy
+	}
+
+
+```
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_add_block_header.go#L18-L21
