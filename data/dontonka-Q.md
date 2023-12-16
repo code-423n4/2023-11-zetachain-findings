@@ -619,3 +619,4 @@ func (ob *EVMChainClient) GetInboundVoteMsgForZetaSentEvent(event *zetaconnector
 }
 ```
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/zetaclient/utils.go#L162
+
