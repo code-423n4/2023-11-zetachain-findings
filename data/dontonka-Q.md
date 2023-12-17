@@ -645,3 +645,27 @@ func (k msgServer) AddBlockHeader(goCtx context.Context, msg *types.MsgAddBlockH
 
 ```
 https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/observer/keeper/msg_server_add_block_header.go#L18-L21
+
+
+### **[[ 22 ]]** 
+`MsgCreateTSSVoter::ValidateBasic` is lacking validations, for example `TssPubkey` and `KeyGenZetaHeight` are not validated at all, and neither [inside the handler itself](https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/keeper/msg_tss_voter.go#L29). While I understand this message is restricted to validator, I think you should add more validations as follow.
+
+I would also recommend to go over all the `ValidateBasic` functions, the implementation is not consistent overall, like not all the message fields are validated inside their corresponding `ValidateBasic`, some lacking more then others.
+
+```diff
+func (msg *MsgCreateTSSVoter) ValidateBasic() error {
+	_, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
++
++	_, err = cosmos.GetPubKeyFromBech32(cosmos.Bech32PubKeyTypeAccPub, msg.TssPubkey)
++	if err != nil {
++		return errorsmod.Wrapf(sdkerrors.ErrInvalidPubKey, "invalid tss pubkey (%s)", err)
++	}
+
+	return nil
+}
+```
+
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/node/x/crosschain/types/message_tss_voter.go#L43-L49
