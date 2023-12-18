@@ -75,7 +75,7 @@ the standard. When interfacing with external ERC20 tokens, be wary of popular to
 do not properly implement the standard (e.g., many tokens do not include return values for
 approve, transfer, transferFrom, etc.).
 
-3. Compile error in macos
+[L-3] Compile error in macos
 go version: go1.20.4 darwin/arm64
 os: macos
 
@@ -95,3 +95,37 @@ go: github.com/zeta-chain/keystone/keys@v0.0.0-20231105174229-903bc9405da2 requi
         remote: Repository not found.
         fatal: repository 'https://github.com/mitchellh/osext/' not found
 When I build Zeta for the first time, this error occurs. If it's not the first time build it, this error may not appear because the cache already has the 'osext' repo.
+
+[L-4] Enhancing Flexibility for ChainName
+The ChainName enum can be made flexible by structuring it as an array. It should allow for dynamic addition and removal of chains, a functionality that can be granted to administrators. This design is particularly important for EVM chains, anticipating the potential addition of more supported chains in case of future forks.
+```solidity
+File: repos/node/proto/common/common.proto
+ enum ChainName {
+  option (gogoproto.goproto_enum_stringer) = true;
+  empty = 0;
+
+  eth_mainnet = 1;
+  zeta_mainnet = 2;
+  btc_mainnet = 3;
+  polygon_mainnet = 4;
+  bsc_mainnet = 5;
+  //  Testnet
+  goerli_testnet = 6;
+  mumbai_testnet = 7;
+  ganache_testnet = 8;
+  baobab_testnet = 9;
+  bsc_testnet = 10;
+  zeta_testnet = 11;
+  btc_testnet = 12;
+  //  LocalNet
+  //  zeta_localnet = 13;
+  goerli_localnet = 14;
+  btc_regtest = 15;
+  // Athens
+  //  zeta_athensnet=15;
+}
+
+```
+
+[L-5] Caution: Managing the Order of Writes and Reads in KV Database
+For KV databases, the order of reads and writes is often inconsistent. When dealing with scenarios that require strong ordering for serialization and deserialization, it is necessary to use additional storage to establish the order. Please carefully examine whether this situation exists, especially for the storage of critical data such as ballots, observers, and more. It is particularly important to document this when providing access to external interfaces or third-party usage.
