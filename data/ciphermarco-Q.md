@@ -1,4 +1,4 @@
-# `Digest` Functions Are Not Guaranteed to Be Deterministic and Can Lead to Collisions
+## `Digest` Functions Are Not Guaranteed to Be Deterministic and Can Lead to Collisions
 
 Most of the messages' `Digest` functions, used to uniquely identify a message, make use of the protobuf message's String method before hashing. In the generated protobuf code, this is defined as:
 
@@ -80,7 +80,7 @@ And, as you can see, the generated `String` method ignores `omitempty` fields. J
 
 This is a very dangerous pattern if used how it is being used. The `String` method should just be used for showing non-critical data to users, and nothing else. A tightly deterministic solution versioned in the codebase (not generated code) must be implemented for a critical operation like this.
 
-# Policy Type Group 2 Can Use Old TSS Pubkeys
+## Policy Type Group 2 Can Use Old TSS Pubkeys
 
 With the current logic, `Group2` Admins can choose to use old, "revoked" TSS Pubkeys. It just loops through all TSS keys, looking for a TSS Pubkey that matches `msg.TssPubkey`, and simply uses it if found. This This may be dangerous and cause problems if a mistake happens.
 
@@ -97,7 +97,7 @@ func (k msgServer) UpdateTssAddress(goCtx context.Context, msg *types.MsgUpdateT
 
 Consider implementing some sort of tracking method for "revoked" or inutilised keys so there can be a check here.
 
-# Bitcoin Static PoW Check
+## Bitcoin Static PoW Check
 
 `CheckProofOfWork` is passed a static `PowLimit` parameter. That static `PowLimit` is the maximum allowed PoW, it is, the easiest value allowed. This does not really checks if the Proof-of-Work is valid in the current state:
 
@@ -109,7 +109,7 @@ Consider implementing some sort of tracking method for "revoked" or inutilised k
 	}
 ```
 
-# Too Few Confirmations for Critical Operations
+## Too Few Confirmations for Critical Operations
 
 Critical operations depends on too few confirmations. For example:
 
@@ -122,7 +122,7 @@ Critical operations depends on too few confirmations. For example:
 
 These confirmation counts may be fine for user clients or less critical software. But for a project like ZetaChain, where value will move accross a diverse set of connected chains, moving these values in a terminal way with only these confirmation counts is highly risky. I recommend a serious research to decide what these values should be for the acceptable risk of the project, but definetely not values this low.
 
-# Bitcoin Client Useless Resource Spent on Block Loop
+## Bitcoin Client Useless Resource Spent on Block Loop
 
 For each transaction in a block the `bitcoin_client` prints all `vout`s for every transactions without requiring any testing or debug flags, always. This is not recommended for production as will waste lots of resources and delay the client:
 
@@ -139,18 +139,18 @@ For each transaction in a block the `bitcoin_client` prints all `vout`s for ever
 		}
 ```
 
-# Bitcoin Client is Vulnerable to Leaf-Node Weakness
+## Bitcoin Client is Vulnerable to Leaf-Node Weakness
 
 The Bitcoin Client implemented in `bitcoin_client.go`, that is a fork of Summa bitcoin-spv is vulnerable to Leaf-Node Weakness. You can read more about this [here](https://bitslog.com/2018/06/09/leaf-node-weakness-in-bitcoin-merkle-tree-design/) and [here](https://bitcoin.stackexchange.com/questions/76121/how-is-the-leaf-node-weakness-in-merkle-trees-exploitable). This is basically a way to fooling SPV verification to interpret maliciously crafted transactions as inner nodes. I think this attack is too costly to the possible gains of exploiting how the SPV verification is being used here. But beware about using this code for critical operations as the mostly used SPV implementations and chain projects that neeed this kind of verification (e.g., RootStock, Blockstream Elements sidechain) are implementing mitigations to this vulnerability.
 
-Some of these mitigations include:#
+Some of these mitigations include:##
 * Forbidding 64-bytes transactions, as these are non-standard and will probably only be crafted to perform such attack;
 * Be strict about the merkle proof size, according to number of transactions and the consequent tree depth.
 
 `bitcoin_client.go`:
 * https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd42f001e81941a/repos/node/common/bitcoin/bitcoin_spv.go
 
-# nosec G701
+## nosec G701
 
 The code is full of comments like this:
 
@@ -162,7 +162,7 @@ There are safer patterns than casting integers hoping the expectations are met. 
 
 My recommendation is that these patterns are researched and the ones that best meet the software needs are applied, so these `#nosec` comments can be removed from the codebase.
 
-# Unchecked `nil`
+## Unchecked `nil`
 
 The Message Server's function `AddBlockHeader` does not check for the possible `nil` return from `common.GetChainFromChainID(msg.ChainId)` and tries to dereference it, causing a `panic`.
 
@@ -194,7 +194,7 @@ This is reported as a low because the `panic` is handled by the default recovery
 
 As you may have noticed, this is similar to what was found in the June 30, 2023 Zellic's report, although it was then spotted in other parts of the project. So this should be encoded and enforced by some sort of Variant Analysis tool or similar in order to further avoid new occurrences of this same vulnerable pattern.
 
-# Same Default Address for Both Admin Groups
+## Same Default Address for Both Admin Groups
 
 Both admin groups, thave have very different security models and privileges, have the same default address:
 
@@ -234,7 +234,7 @@ params:
 
 These are tests, but I think it is worth pointing since this can lead to a bad practice that will eventually result in a dangerous mistake.
 
-# `x/crosschain/keeper/keeper_gas_price.go`'s `GasPriceVoter` Repeated If Condition
+## `x/crosschain/keeper/keeper_gas_price.go`'s `GasPriceVoter` Repeated If Condition
 
 Unnecessarily repeated if condition:
 
