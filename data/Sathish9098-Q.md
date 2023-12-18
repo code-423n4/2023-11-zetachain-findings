@@ -4,7 +4,7 @@
 
 ##
 
-## [L-3] Contradiction between documentation and implementation in ``deposit()`` Function
+## [L-1] Contradiction between documentation and implementation in ``deposit()`` Function
 
 ### Impact
 
@@ -47,7 +47,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/2834e3f85b2c7774e9741393601
 ```
 ##
 
-## [L-1] Hardcoded ChainId
+## [L-2] Hardcoded ChainId
 
 ### Impact
 In systems where signatures are used for authentication or transaction verification, a hardcoded CHAIN_ID can cause issues if the network’s chain ID changes. This could invalidate existing signatures or compromise the integrity of new ones.
@@ -78,7 +78,7 @@ Make chain id configurable
 
 ##
 
-## [L-2] Lack of sanity checks for ``address`` and ``uint256`` when assigning to state variable
+## [L-3] Lack of sanity checks for ``address`` and ``uint256`` when assigning to state variable
 
 ### Impact
 The absence of sanity checks for address and uint256 types in the provided smart contract constructor can lead to several potential issues and vulnerabilities.
@@ -173,7 +173,7 @@ function rescueEther() external {
 
 ##
 
-## [L-] Implementing Dual-Phase Protocol address updates for enhanced security 
+## [L-5] Implementing Dual-Phase Protocol address updates for enhanced security 
 
 ### Impact
 
@@ -194,7 +194,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] External call recipient may consume all transaction gas
+## [L-6] External call recipient may consume all transaction gas
 
 ### Impact
 
@@ -232,7 +232,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] Lack of address(0) in important SYSTEM_CONTRACT_ADDRESS update 
+## [L-7] Lack of address(0) in important SYSTEM_CONTRACT_ADDRESS update 
 
 ### Impact
 Without a check for address(0), there's a risk that the SYSTEM_CONTRACT_ADDRESS could be set to this null address. This could happen either accidentally (due to a programming error) or maliciously (if an attacker gains control)
@@ -265,7 +265,7 @@ function updateSystemContractAddress(address addr) external onlyFungible {
 
 ##
 
-## [L-] Missing contract-existence checks before low-level calls
+## [L-8] Missing contract-existence checks before low-level calls
 
 ### Impact
 
@@ -294,7 +294,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] Numbers downcast to addresses may result in collisions
+## [L-9] Numbers downcast to addresses may result in collisions
 
 ### Impact
 If a number is downcast to an address the upper bytes are truncated, which may mean that more than one value will map to the address
@@ -341,7 +341,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] State variables not capped at reasonable values
+## [L-10] State variables not capped at reasonable values
 
 ### Impact
 Consider adding minimum/maximum value checks to ensure that the state variables below can never be used to excessively harm users, including via griefing
@@ -366,7 +366,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] Unsafe downcast
+## [L-11] Unsafe downcast
 
 ### Impact
 When a type is downcast to a smaller type, the higher order bits are truncated, effectively applying a modulo to the original value. Without any other checks, this wrapping will lead to unexpected behavior and bugs
@@ -388,7 +388,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] Follow Check-Effect-Interaction pattern 
+## [L-12] Follow Check-Effect-Interaction pattern 
 
 ``Check``: Validate all conditions and states before making any state changes. This involves ensuring that the inputs are valid, the sender is authorized, and any other preconditions are met.
 
@@ -416,7 +416,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [L-] Use of a single-step ownership transfer
+## [L-13] Use of a single-step ownership transfer
 
 ### Impact
 The existing transferOwnership function immediately transfers ownership to the new addres. Consider implementing a two-step variant, where the 'acceptor' of the ownership must call a separate function in order for the transfer to take effect. This can help to prevent mistakes where the wrong address is used, and ownership is irrecoverably lost.
@@ -435,7 +435,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] addresses shouldn't be hard-coded
+## [NC-1] addresses shouldn't be hard-coded
 
 It is often better to declare addresses as immutable, and assign them via constructor arguments. This allows the code to remain the same across deployments on different networks, and avoids recompilation when addresses need to change.
 
@@ -450,7 +450,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Add inline comments for unnamed variables
+## [NC-2] Add inline comments for unnamed variables
 
 function foo(address x, address) -> function foo(address x, address /* y */)
 
@@ -471,7 +471,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Array indices should be referenced via enums rather than via numeric literals
+## [NC-3] Array indices should be referenced via enums rather than via numeric literals
 
 ```solidity
 FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
@@ -489,7 +489,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Assembly block creates dirty bits
+## [NC-4] Assembly block creates dirty bits
 
 Writing data to the free memory pointer without later updating the free memory pointer will cause there to be dirty bits at that memory location. Not updating the free memory pointer will make it [harder](https://docs.soliditylang.org/en/latest/ir-breaking-changes.html#cleanup) for the optimizer to reason about whether the memory needs to be cleaned, which may lead to worse optimizations. Annotate the block with assembly ("memory-safe") { ... } if the memory's value can be discarded. If the memory needs to be saved, update the free memory pointer in addtion to using the annotation. See this [link](https://docs.soliditylang.org/en/latest/assembly.html#memory-safety) for other cases where the annotation can be used.
 
@@ -515,7 +515,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Assembly blocks should have extensive comments
+## [NC-5] Assembly blocks should have extensive comments
 
 Assembly blocks take a lot more time to audit than normal Solidity code, and often have gotchas and side-effects that the Solidity versions of the same code do not. Consider adding more comments explaining what is being done in every step of the assembly code, and describe why assembly is being used instead of Solidity.
 
@@ -542,7 +542,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Cast to bytes or bytes32 for clearer semantic meaning
+## [NC-6] Cast to bytes or bytes32 for clearer semantic meaning
 
 Using a [cast](https://ethereum.stackexchange.com/questions/30912/how-to-compare-strings-in-solidity#answer-82739) on a single argument, rather than abi.encodePacked() makes the intended operation more clear, leading to less reviewer confusion.
 
@@ -556,7 +556,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Complex casting
+## [NC-7] Complex casting
 
 Consider whether the number of casts is really necessary, or whether using a different type would be more appropriate. Alternatively, add comments to explain in detail why the casts are necessary, and any implicit reasons why the cast does not introduce an overflow.
 
@@ -601,7 +601,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Consider adding a block/deny-list
+## [NC-8] Consider adding a block/deny-list
 
 Doing so will significantly increase centralization, but will help to prevent hackers from using stolen tokens
 
@@ -615,13 +615,13 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ## 
 
-##[NC-] Consider adding emergency-stop functionality
+##[NC-9] Consider adding emergency-stop functionality
 
 Adding a way to quickly halt protocol functionality in an emergency, rather than having to pause individual contracts one-by-one, will make in-progress hack mitigation faster and much less stressful.
 
 ##
 
-## [NC-] Consider disallowing transfers to address(this)
+## [NC-10] Consider disallowing transfers to address(this)
 
 ```solidity
 FILE : 2023-11-zetachain/repos/protocol-contracts/contracts/evm/tools
@@ -638,7 +638,7 @@ https://github.com/code-423n4/2023-11-zetachain/blob/b237708ed5e86f12c4bddabddfd
 
 ##
 
-## [NC-] Consider moving msg.sender checks to a common authorization modifier
+## [NC-11] Consider moving msg.sender checks to a common authorization modifier
 
 ```solidity
 FILE: 2023-11-zetachain/repos/protocol-contracts/contracts/zevm/ZRC20.sol
