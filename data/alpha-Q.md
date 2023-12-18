@@ -75,3 +75,23 @@ the standard. When interfacing with external ERC20 tokens, be wary of popular to
 do not properly implement the standard (e.g., many tokens do not include return values for
 approve, transfer, transferFrom, etc.).
 
+3. Compile error in macos
+go version: go1.20.4 darwin/arm64
+os: macos
+
+https://github.com/code-423n4/2023-11-zetachain/tree/main/repos/node
+
+run go mod tidy in this repo, the following is err:
+
+go: github.com/zeta-chain/keystone/keys@v0.0.0-20231105174229-903bc9405da2 requires
+        github.com/tendermint/tendermint@v0.34.12 requires
+        github.com/moby/buildkit@v0.10.4 requires
+        github.com/tonistiigi/go-actions-cache@v0.0.0-20220404170428-0bdeb6e1eac7 requires
+        github.com/moby/buildkit@v0.8.1 requires
+        github.com/containerd/stargz-snapshotter@v0.0.0-20201027054423-3a04e4c2c116 requires
+        github.com/Microsoft/hcsshim/test@v0.0.0-20200826032352-301c83a30e7c requires
+        github.com/docker/distribution@v0.0.0-20190905152932-14b96e55d84c requires
+        github.com/mitchellh/osext@v0.0.0-20151018003038-5e2d6d41470f: invalid version: git ls-remote -q origin in /Users/xx/xx/xx/mod/cache/vcs/94ed57c5b21c953d93b47487113db43a5c9b69fd990329ec70dc77348c4dd443: exit status 128:
+        remote: Repository not found.
+        fatal: repository 'https://github.com/mitchellh/osext/' not found
+When I build Zeta for the first time, this error occurs. If it's not the first time build it, this error may not appear because the cache already has the 'osext' repo.
