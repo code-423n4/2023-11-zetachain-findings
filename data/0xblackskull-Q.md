@@ -85,3 +85,8 @@ string private immutable _name;
 string private immutable _symbol;
 uint8 private immutable _decimals;
 ```
+
+### ZetaInteractor.sol fail on hard fork
+###### Description
+ZetaInteractor.sol uses block.chainid, which may be break on hard fork of this contract. 
+https://github.com/code-423n4/2023-11-zetachain/blob/main/repos/protocol-contracts/contracts/evm/tools/ZetaInteractor.sol#L39
